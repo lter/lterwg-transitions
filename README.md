@@ -21,6 +21,7 @@ https://github.com/lter/lterwg-transitions
 
 - All code should include sufficient annotation and documentation so that other users can understand and run the scripts 
 - Write your scripts such that other users can run the code without modifications. Keep file paths and other variables that might need to be changed at the beginning of the script, just after attaching the necessary libraries
+- Use RSudio projects to manage working directory and avoid `setwd()`
 - Include an attribution header to your scripts
 
 Example:
