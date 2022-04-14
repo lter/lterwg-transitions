@@ -37,3 +37,8 @@ vignettes/*.pdf
 
 # R Environment Variables
 .Renviron
+
+# Beta testing code for the long term perturbation experiments 
+
+Beta_testing/
+
