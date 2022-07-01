@@ -4,15 +4,15 @@
 ##
 ## Purpose of script: A script that counts the number of times each positive/negative keyword appears in the abstract and tries to determine which papers to include in our analysis based on those keywords
 ##
-## Author: Angel Chen
+## Authors: Angel Chen & Nick Lyon
 ##
-## Email: anchen@nceas.ucsb.edu
+## Emails: anchen@nceas.ucsb.edu, lyon@nceas.ucsb.edu
 ##
 ## ---------------------------
 
 # loading packages
 # install.packages("librarian")
-librarian::shelf(tidyverse, readr, readxl, googledrive, randomForest)
+librarian::shelf(tidyverse, readr, readxl, googledrive, randomForest, purrr)
 
 # download files from google drive
 folder_url<- "https://drive.google.com/drive/folders/1LxFV4HRhiPGvCKJD7TpenAPVlXob7P7U" #this is for all data folder
