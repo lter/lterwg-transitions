@@ -55,66 +55,121 @@ papers <- file.path("Search Results", csv_names) %>%
 # first filter out the papers with the positive keywords
 # then extract the positive and negative keywords from the abstract and make them into 2 new columns
 extracted_papers <- papers %>% 
-  mutate(positive_keywords = str_extract_all(Abstract, "[Ee]xperiment|[Oo]bservation"),  #includes words such as "experimental" and "observations"
-         negative_keywords = str_extract_all(Abstract, "[Mm]eta-analysis|[Mm]eta analysis|[Mm]odeling|[Mm]odelling|[Rr]eview|[Aa]quatic|[Ii]ncubation|[Gg]reenhouse|[Mm]arine|[Rr]iver|[Cc]oral")) 
+  mutate(positive_keywords_abstract = str_extract_all(Abstract, "[Ee]xperiment|[Oo]bservation"),  #includes words such as "experimental" and "observations"
+         negative_keywords_abstract = str_extract_all(Abstract, "[Mm]eta-analysis|[Mm]eta analysis|[Mm]odeling|[Mm]odelling|[Rr]eview|[Aa]quatic|[Ii]ncubation|[Gg]reenhouse|[Mm]arine|(?<![Dd])[Rr]iver|[Cc]oral"), # I have (?<![Dd])[Rr]iver so str_detect doesn't confuse "driver" with "river"
+         positive_keywords_title = str_extract_all(ArticleTitle, "[Ee]xperiment|[Oo]bservation"),
+         negative_keywords_title = str_extract_all(ArticleTitle, "[Mm]eta-analysis|[Mm]eta analysis|[Mm]odeling|[Mm]odelling|[Rr]eview|[Aa]quatic|[Ii]ncubation|[Gg]reenhouse|[Mm]arine|(?<![Dd])[Rr]iver|[Cc]oral")) 
 
-# combine the extracted positive keywords into one string for each paper
-for (i in 1:length(extracted_papers$positive_keywords)){
-  if(length(extracted_papers$positive_keywords[[i]]) > 1){
-    keyword <- (str_c(extracted_papers$positive_keywords[[i]], collapse = ";"))
-    extracted_papers$positive_keywords[[i]] <- keyword
+# combine the extracted positive keywords into one string for each paper's abstract
+for (i in 1:length(extracted_papers$positive_keywords_abstract)){
+  if(length(extracted_papers$positive_keywords_abstract[[i]]) > 1){
+    keyword <- (str_c(extracted_papers$positive_keywords_abstract[[i]], collapse = ";"))
+    extracted_papers$positive_keywords_abstract[[i]] <- keyword
   }
 }
 
-# combine the extracted negative keywords into one string for each paper
-for (i in 1:length(extracted_papers$negative_keywords)){
-  if(length(extracted_papers$negative_keywords[[i]]) > 1){
-    keyword <- (str_c(extracted_papers$negative_keywords[[i]], collapse = ";"))
-    extracted_papers$negative_keywords[[i]] <- keyword
+# combine the extracted negative keywords into one string for each paper's abstract
+for (i in 1:length(extracted_papers$negative_keywords_abstract)){
+  if(length(extracted_papers$negative_keywords_abstract[[i]]) > 1){
+    keyword <- (str_c(extracted_papers$negative_keywords_abstract[[i]], collapse = ";"))
+    extracted_papers$negative_keywords_abstract[[i]] <- keyword
+  }
+}
+
+# combine the extracted positive keywords into one string for each paper's title
+for (i in 1:length(extracted_papers$positive_keywords_title)){
+  if(length(extracted_papers$positive_keywords_title[[i]]) > 1){
+    keyword <- (str_c(extracted_papers$positive_keywords_title[[i]], collapse = ";"))
+    extracted_papers$positive_keywords_title[[i]] <- keyword
+  }
+}
+
+# combine the extracted negative keywords into one string for each paper's title
+for (i in 1:length(extracted_papers$negative_keywords_title)){
+  if(length(extracted_papers$negative_keywords_title[[i]]) > 1){
+    keyword <- (str_c(extracted_papers$negative_keywords_title[[i]], collapse = ";"))
+    extracted_papers$negative_keywords_title[[i]] <- keyword
   }
 }
 
 # replacing all the incidences of "character(0)" in the positive_keywords and negative_keywords columns with NA values
 extracted_papers <- extracted_papers %>%
-  mutate(negative_keywords = ifelse(negative_keywords == "character(0)", NA_character_, negative_keywords),
-         positive_keywords = ifelse(positive_keywords == "character(0)", NA_character_, positive_keywords)) 
+  mutate(positive_keywords_abstract = ifelse(positive_keywords_abstract == "character(0)", NA_character_, positive_keywords_abstract),
+         negative_keywords_abstract = ifelse(negative_keywords_abstract == "character(0)", NA_character_, negative_keywords_abstract),
+         positive_keywords_title = ifelse(positive_keywords_title == "character(0)", NA_character_, positive_keywords_title),
+         negative_keywords_title = ifelse(negative_keywords_title == "character(0)", NA_character_, negative_keywords_title)) 
 
 # make a column for every positive keyword, counting how many times each positive keyword appeared in the abstract
 # make one last column counting the total amount of times a positive keyword has appeared in the abstract
-extracted_positive <- extracted_papers %>%  
-  dplyr::select(-negative_keywords) %>%
-  tidyr::separate_rows(positive_keywords, sep = ";") %>%
-  dplyr::mutate(positive_keywords = tolower(positive_keywords)) %>%
-  dplyr::count(DOI, ArticleTitle, Abstract, positive_keywords) %>%
+extracted_positive_abstract <- extracted_papers %>%  
+  dplyr::select(-negative_keywords_abstract, -negative_keywords_title, -positive_keywords_title) %>%
+  tidyr::separate_rows(positive_keywords_abstract, sep = ";") %>%
+  dplyr::mutate(positive_keywords_abstract = tolower(positive_keywords_abstract)) %>%
+  dplyr::count(DOI, ArticleTitle, Abstract, positive_keywords_abstract) %>%
   dplyr::rename(positive_count = n) %>%
-  tidyr::pivot_wider(names_from = positive_keywords,
+  tidyr::pivot_wider(names_from = positive_keywords_abstract,
                      values_from = positive_count,
                      values_fill = 0) %>%
   dplyr::mutate(total_positive_count = experiment+observation) %>%
-  dplyr::select(-`NA`)
+  dplyr::select(-`NA`) %>%
+  dplyr::rename_at(4:6, ~ paste0(.x, "_abstract"))
 
 # make a column for every negative keyword, counting how many times each negative keyword appeared in the abstract
 # make one last column counting the total amount of times a negative keyword has appeared in the abstract
 # also rename the meta-analysis column to meta_analysis
-extracted_negative <- extracted_papers %>%
-  dplyr::select(-positive_keywords) %>%
-  tidyr::separate_rows(negative_keywords, sep = ";") %>%
-  dplyr::mutate(negative_keywords = tolower(negative_keywords)) %>%
-  dplyr::count(DOI, ArticleTitle, Abstract, negative_keywords) %>%
+extracted_negative_abstract <- extracted_papers %>%
+  dplyr::select(-positive_keywords_abstract, -negative_keywords_title, -positive_keywords_title) %>%
+  tidyr::separate_rows(negative_keywords_abstract, sep = ";") %>%
+  dplyr::mutate(negative_keywords_abstract = tolower(negative_keywords_abstract)) %>%
+  dplyr::count(DOI, ArticleTitle, Abstract, negative_keywords_abstract) %>%
   dplyr::rename(negative_count = n) %>%
-  tidyr::pivot_wider(names_from = negative_keywords, values_from = negative_count, values_fill = 0) %>%
+  tidyr::pivot_wider(names_from = negative_keywords_abstract, values_from = negative_count, values_fill = 0) %>%
   dplyr::mutate(total_negative_count = modeling + river + marine + review + modelling + aquatic + `meta-analysis` + coral + incubation + greenhouse) %>%
   dplyr::rename(meta_analysis = `meta-analysis`) %>%
-  dplyr::select(-`NA`) 
+  dplyr::select(-`NA`) %>%
+  dplyr::rename_at(4:14, ~ paste0(.x, "_abstract"))
 
+# make a column for every positive keyword, counting how many times each positive keyword appeared in the title
+# make one last column counting the total amount of times a positive keyword has appeared in the title
+extracted_positive_title <- extracted_papers %>%  
+  dplyr::select(-negative_keywords_abstract, -positive_keywords_abstract, -negative_keywords_title) %>%
+  tidyr::separate_rows(positive_keywords_title, sep = ";") %>%
+  dplyr::mutate(positive_keywords_title = tolower(positive_keywords_title)) %>%
+  dplyr::count(DOI, ArticleTitle, Abstract, positive_keywords_title) %>%
+  dplyr::rename(positive_count = n) %>%
+  tidyr::pivot_wider(names_from = positive_keywords_title,
+                     values_from = positive_count,
+                     values_fill = 0) %>%
+  dplyr::mutate(total_positive_count = experiment+observation) %>%
+  dplyr::select(-`NA`) %>%
+  dplyr::rename_at(4:6, ~ paste0(.x, "_title"))
 
-# combining our results together to get a dataframe that has the total count of positive and negative keywords for each paper's abstract
-# make one last column called "final_score" which is the amount of positive keywords minus the amount of negative keywords in an abstract
-# papers with a higher final_score have more positive keywords than negative ones
-result <- left_join(extracted_positive, extracted_negative, by = c("DOI", "ArticleTitle", "Abstract")) %>%
-  mutate(final_score = total_positive_count - total_negative_count) %>%
+# make a column for every negative keyword, counting how many times each negative keyword appeared in the title
+# make one last column counting the total amount of times a negative keyword has appeared in the title
+# also rename the meta-analysis column to meta_analysis
+extracted_negative_title <- extracted_papers %>%
+  dplyr::select(-positive_keywords_abstract, -negative_keywords_abstract, -positive_keywords_title) %>%
+  tidyr::separate_rows(negative_keywords_title, sep = ";") %>%
+  dplyr::mutate(negative_keywords_title = tolower(negative_keywords_title)) %>%
+  dplyr::count(DOI, ArticleTitle, Abstract, negative_keywords_title) %>%
+  dplyr::rename(negative_count = n) %>%
+  tidyr::pivot_wider(names_from = negative_keywords_title, values_from = negative_count, values_fill = 0) %>%
+  dplyr::mutate(total_negative_count = modeling + river + marine + review + modelling + aquatic + `meta-analysis` + coral + incubation + greenhouse) %>%
+  dplyr::rename(meta_analysis = `meta-analysis`) %>%
+  dplyr::select(-`NA`) %>%
+  dplyr::rename_at(4:14, ~ paste0(.x, "_title"))
+
+# combining our results together to get a dataframe that has the total count of positive and negative keywords for each paper's abstract & title
+# make one last column called "final_score" which is the amount of positive keywords minus the amount of negative keywords 
+# papers with a higher final_score have more positive keywords than negative ones in its abstract & title
+result <- left_join(extracted_positive_abstract, extracted_positive_title, by = c("DOI", "ArticleTitle", "Abstract")) %>%
+  left_join(extracted_negative_abstract, by = c("DOI", "ArticleTitle", "Abstract")) %>%
+  left_join(extracted_negative_title, by = c("DOI", "ArticleTitle", "Abstract")) %>%
+  mutate(total_positive_count = total_positive_count_abstract + total_positive_count_title,
+         total_negative_count = total_negative_count_abstract + total_negative_count_title,
+         final_score = total_positive_count - total_negative_count) %>%
   arrange(desc(final_score))
- 
+
 
 ## ---------------------------
 ##
@@ -143,7 +198,7 @@ for(file_id in sheets$id){
   file_name <- dplyr::filter(sheets, id == file_id)$name
   # Download it locally
   drive_download(file = as_id(file_id), path = file.path("Reading Assignments", file_name), overwrite=TRUE)
-  }
+}
 
 # Identify Excel file names
 xl_names <- dir(file.path("Reading Assignments"))
@@ -156,7 +211,7 @@ all_sheets <- file.path("Reading Assignments", xl_names) %>%
   dplyr::mutate(DOI = ifelse(test = is.na(DOI),
                              yes = "no doi",
                              no = DOI))
- 
+
 # left-join our result from earlier with the PIs' decisions
 sanity_check <- left_join(result, all_sheets, by = c("DOI", "ArticleTitle", "Abstract")) %>%
   filter(!is.na(Include)) 
@@ -186,15 +241,16 @@ train <- sanity_check[sample1,]
 test <- sanity_check[-sample1,]
 
 # training a random forest on our dataframe
-# we have 16 predictors so we use the square root of 16 as the number of variables to use for splitting
+# we have 32 predictors so we use the square root of 32 as the number of variables to use for splitting
 set.seed(1)
-forest_fit <- randomForest(Include~., data=train, mtry=sqrt(16), importance=TRUE)
+forest_fit <- randomForest(Include~., data=train, mtry=sqrt(32), importance=TRUE)
 
 # making our predictions on the test set
 forest_pred <- predict(forest_fit, newdata = test)
 
 # test error rate for random forest
 # turns out that this model classifies incorrectly around 30% of the time
+# most of the misclassification comes from predicting a paper as "no, do not include" when in reality, it is actually "yes, include"
 table(forest_pred, truth = test$Include)
 mean(forest_pred != test$Include)
 
@@ -203,3 +259,22 @@ mean(forest_pred != test$Include)
 varImpPlot(forest_fit, sort = TRUE, main = "Variable Importance for forest_fit", n.var=5)
 
 # In conclusion: since our misclassification rate is so high, we can improve our model accuracy by considering more keywords 
+
+# get a clean copy of sanity_check with all of its original columns again
+sanity_check <- left_join(result, all_sheets, by = c("DOI", "ArticleTitle", "Abstract")) %>%
+  filter(!is.na(Include)) 
+
+# find the top 10 papers with the highest number of positive keywords
+top_10_positive <- result %>% 
+  slice_max(total_positive_count, n = 10) %>% 
+  left_join(sanity_check)
+
+# find the top 10 papers with the highest number of negative keywords
+top_10_negative <- result %>% 
+  slice_max(total_negative_count, n = 10) %>% 
+  left_join(sanity_check)
+
+# export
+my_path <- file.path("Papers Search")
+write.csv(x = top_10_positive, file = file.path(my_path, "top_10_positive.csv"))
+write.csv(x = top_10_negative, file = file.path(my_path, "top_10_negative.csv"))
