@@ -16,7 +16,7 @@ librarian::shelf(tidyverse, readr, readxl, googledrive, randomForest, purrr)
 
 
 # Set the path to download the abstracts
-search_path <- "Papers_search"
+search_path <- "Papers_Search"
 abstracts_folder <- file.path(search_path, "Search_sesults")
 assignements_folder <- file.path(search_path, "Reading_assignments")
 
