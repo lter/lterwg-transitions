@@ -14,6 +14,13 @@
 # install.packages("librarian")
 librarian::shelf(tidyverse, readr, readxl, googledrive, randomForest, purrr)
 
+
+# Set the path to download the abstracts
+search_path <- "Papers_search"
+abstracts_folder <- file.path(search_path, "Search_sesults")
+assignements_folder <- file.path(search_path, "Reading_assignments")
+
+
 # download files from google drive
 folder_url<- "https://drive.google.com/drive/folders/1LxFV4HRhiPGvCKJD7TpenAPVlXob7P7U" #this is for all data folder
 
@@ -25,24 +32,24 @@ folder <- drive_get(as_id(folder_url), shared_drive = "RawSearchResults")
 csv_files <- drive_ls(folder, type = "csv")
 
 # Create a folder to locally save to
-dir.create("Search Results")
+dir.create(abstracts_folder)
 
 # download them
 for(csv_id in csv_files$id){
   # Identify file name
   csv_name <- dplyr::filter(csv_files, id == csv_id)$name
   # Download it locally
-  drive_download(file = as_id(csv_id), path = file.path("Search Results", csv_name), overwrite=TRUE)
+  drive_download(file = as_id(csv_id), path = file.path(abstracts_folder, csv_name), overwrite=TRUE)
 }
 # walk(csv_files$id, ~ drive_download(as_id(.x), overwrite=TRUE))
 
 # read in the csv files
 ## Identify paper names
-csv_names <- dir(file.path("Search Results"))
+csv_names <- dir(abstracts_folder, full.names = TRUE)
 csv_names
 
-# Read in CSVs
-papers <- file.path("Search Results", csv_names) %>%
+# Read in CSVs as one data frame
+papers <- csv_names %>%
   ## Actual reading step
   purrr::map(.f = readr::read_csv) %>%
   ## Then pare down to only needed columns
@@ -55,49 +62,18 @@ papers <- file.path("Search Results", csv_names) %>%
 # first filter out the papers with the positive keywords
 # then extract the positive and negative keywords from the abstract and make them into 2 new columns
 extracted_papers <- papers %>% 
-  mutate(positive_keywords_abstract = str_extract_all(Abstract, "[Ee]xperiment|[Oo]bservation"),  #includes words such as "experimental" and "observations"
-         negative_keywords_abstract = str_extract_all(Abstract, "[Mm]eta-analysis|[Mm]eta analysis|[Mm]odeling|[Mm]odelling|[Rr]eview|[Aa]quatic|[Ii]ncubation|[Gg]reenhouse|[Mm]arine|(?<![Dd])[Rr]iver|[Cc]oral"), # I have (?<![Dd])[Rr]iver so str_detect doesn't confuse "driver" with "river"
-         positive_keywords_title = str_extract_all(ArticleTitle, "[Ee]xperiment|[Oo]bservation"),
-         negative_keywords_title = str_extract_all(ArticleTitle, "[Mm]eta-analysis|[Mm]eta analysis|[Mm]odeling|[Mm]odelling|[Rr]eview|[Aa]quatic|[Ii]ncubation|[Gg]reenhouse|[Mm]arine|(?<![Dd])[Rr]iver|[Cc]oral")) 
+  mutate(positive_keywords_abstract = str_extract_all(Abstract, "[Ee]xperiment|[Oo]bservation") %>%
+           map_chr( ~ paste0(tolower(.x), collapse = ";")),  #includes words such as "experimental" and "observations"
+         negative_keywords_abstract = str_extract_all(Abstract, "[Mm]eta-analysis|[Mm]eta analysis|[Mm]odeling|[Mm]odelling|[Rr]eview|[Aa]quatic|[Ii]ncubation|[Gg]reenhouse|[Mm]arine|(?<![Dd])[Rr]iver|[Cc]oral") %>%
+           map_chr( ~ paste0(tolower(.x), collapse = ";")), # I have (?<![Dd])[Rr]iver so str_detect doesn't confuse "driver" with "river"
+         positive_keywords_title = str_extract_all(ArticleTitle, "[Ee]xperiment|[Oo]bservation") %>% 
+           map_chr( ~ paste0(tolower(.x), collapse = ";")),
+         negative_keywords_title = str_extract_all(ArticleTitle, "[Mm]eta-analysis|[Mm]eta analysis|[Mm]odeling|[Mm]odelling|[Rr]eview|[Aa]quatic|[Ii]ncubation|[Gg]reenhouse|[Mm]arine|(?<![Dd])[Rr]iver|[Cc]oral") %>%
+           map_chr( ~ paste0(tolower(.x), collapse = ";"))
+         ) %>%
+  mutate_all(list(~ na_if(.,""))) %>% # Set empty strings to NAs
+  mutate_all(list(~ na_if(.,"NA")))  # Returned when abstract was NA 
 
-# combine the extracted positive keywords into one string for each paper's abstract
-for (i in 1:length(extracted_papers$positive_keywords_abstract)){
-  if(length(extracted_papers$positive_keywords_abstract[[i]]) > 1){
-    keyword <- (str_c(extracted_papers$positive_keywords_abstract[[i]], collapse = ";"))
-    extracted_papers$positive_keywords_abstract[[i]] <- keyword
-  }
-}
-
-# combine the extracted negative keywords into one string for each paper's abstract
-for (i in 1:length(extracted_papers$negative_keywords_abstract)){
-  if(length(extracted_papers$negative_keywords_abstract[[i]]) > 1){
-    keyword <- (str_c(extracted_papers$negative_keywords_abstract[[i]], collapse = ";"))
-    extracted_papers$negative_keywords_abstract[[i]] <- keyword
-  }
-}
-
-# combine the extracted positive keywords into one string for each paper's title
-for (i in 1:length(extracted_papers$positive_keywords_title)){
-  if(length(extracted_papers$positive_keywords_title[[i]]) > 1){
-    keyword <- (str_c(extracted_papers$positive_keywords_title[[i]], collapse = ";"))
-    extracted_papers$positive_keywords_title[[i]] <- keyword
-  }
-}
-
-# combine the extracted negative keywords into one string for each paper's title
-for (i in 1:length(extracted_papers$negative_keywords_title)){
-  if(length(extracted_papers$negative_keywords_title[[i]]) > 1){
-    keyword <- (str_c(extracted_papers$negative_keywords_title[[i]], collapse = ";"))
-    extracted_papers$negative_keywords_title[[i]] <- keyword
-  }
-}
-
-# replacing all the incidences of "character(0)" in the positive_keywords and negative_keywords columns with NA values
-extracted_papers <- extracted_papers %>%
-  mutate(positive_keywords_abstract = ifelse(positive_keywords_abstract == "character(0)", NA_character_, positive_keywords_abstract),
-         negative_keywords_abstract = ifelse(negative_keywords_abstract == "character(0)", NA_character_, negative_keywords_abstract),
-         positive_keywords_title = ifelse(positive_keywords_title == "character(0)", NA_character_, positive_keywords_title),
-         negative_keywords_title = ifelse(negative_keywords_title == "character(0)", NA_character_, negative_keywords_title)) 
 
 # make a column for every positive keyword, counting how many times each positive keyword appeared in the abstract
 # make one last column counting the total amount of times a positive keyword has appeared in the abstract
@@ -190,22 +166,22 @@ folder <- drive_get(as_id(folder_url), shared_drive = "Reading Assignments April
 sheets <- drive_ls(folder, type = "spreadsheet")
 
 # Create a local folder for them
-dir.create("Reading Assignments", showWarnings = FALSE)
+dir.create(assignements_folder, showWarnings = FALSE)
 
 # download them
 for(file_id in sheets$id){
   # Identify file name
   file_name <- dplyr::filter(sheets, id == file_id)$name
   # Download it locally
-  drive_download(file = as_id(file_id), path = file.path("Reading Assignments", file_name), overwrite=TRUE)
+  drive_download(file = as_id(file_id), path = file.path(assignements_folder, file_name), overwrite=TRUE)
 }
 
 # Identify Excel file names
-xl_names <- dir(file.path("Reading Assignments"))
+xl_names <- dir(assignements_folder, full.names = TRUE)
 xl_names
 
 # read in the google sheets where the PIs have decided whether to include the papers or not
-all_sheets <- file.path("Reading Assignments", xl_names) %>%
+all_sheets <- xl_names %>%
   purrr::map(.f = read_excel) %>%
   purrr::map_dfr(.f = select, DOI, ArticleTitle, Abstract, Evaluator, Include) %>%
   dplyr::mutate(DOI = ifelse(test = is.na(DOI),
@@ -275,6 +251,6 @@ top_10_negative <- result %>%
   left_join(sanity_check)
 
 # export
-my_path <- file.path("Papers Search")
-write.csv(x = top_10_positive, file = file.path(my_path, "top_10_positive.csv"))
-write.csv(x = top_10_negative, file = file.path(my_path, "top_10_negative.csv"))
+write.csv(x = top_10_positive, file = file.path(search_path, "top_10_positive.csv"))
+write.csv(x = top_10_negative, file = file.path(search_path, "top_10_negative.csv"))
+write.csv(x = result, file = file.path(search_path, "all_keywords_count.csv"))
