@@ -31,5 +31,8 @@ Some other variables:
 
 - `Include`: the `Evaluator`'s decision on whether to include the paper in the analysis or not
 
+### modify_reading_assignments.R
+A script that adds a column called `total_negative_count` to each group member's April reading assignment in Google Sheets
+
 ### LTER-transitions-quanteda.R
 A script that uses the text mining package, quanteda, to determine which papers to include in our analysis based on its abstract. This script has the same purpose as LTER-transitions-abstracts.R but accomplishes it in an alternative way. 
