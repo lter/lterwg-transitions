@@ -5,7 +5,7 @@ library(tidyverse)
 #source("utilities/data_import.R")
 
 ## Data import
-sev_edge <- read.csv("sev298_NPP_edge_biomass.csv")
+sev_edge <- read.csv("shape-shifting-subordinates/sev298_NPP_edge_biomass.csv")
 
 ## Working data frame
 sevedge <- sev_edge %>%
