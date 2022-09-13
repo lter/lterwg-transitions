@@ -3,11 +3,12 @@
 ##
 ## Purpose of script: categorize species by rarity according to Wilfhart et al. paper
 ##
-## Author: Carmen Ebel
+## Author: Carmen Watkins
 ##
 ## Email: cebel2@uoregon.edu
 #---------------------------
 
+# Set up Data & Env ####
 ## load packages
 library(tidyverse)
 
@@ -20,7 +21,7 @@ calcSE<-function(x){
 ## set graphics theme
 theme_set(theme_bw())
 
-# Read in data ####
+# Read in data 
 source("shape-shifting-subordinates/sev_edge_data_cleaning.R")
 dat <- sev_edge_clean ## create new object
 
@@ -34,23 +35,23 @@ dat <- sev_edge_clean ## create new object
     ## looks like 96 total species; currently includes EMPTY; UNKFORB1
     ## abundance data is biomass in g/m2
 
-# Filter to Controls ####
+# Classify spatial & temporal rarity ####
+## Filter to Controls ####
 sevC <- dat %>%
   filter(rainfall == "C") ## remove both rainfall treatments to only classify temporal strategy of species in control plots
 
 ## what should we do about species that are present only in drought plots, not control plots?
+    ## seems like there are only a few, so for the moment don't worry about?
 
-# Classify spatial & temporal rarity ####
-## Rank sp by abundance ####
+## Rank Sp by Abundance ####
 datrank = sevC %>%
   group_by(field, plot, subplot, rainfall) %>%
   mutate(rank = rank(abundance, na.last = NA, ties.method = "average"), percrank = percent_rank(abundance)) 
-## this is the rank for each species in each subplot
-## currently rank and percrank are opposing. 1 is the lowest rank, while 1.00 percrank means the highest biomass.
-## greater rank percentile means that it is more abundant.
+    ## this is the rank for each species in each subplot
+    ## currently rank and percrank are opposing. 1 is the lowest rank, while 1.00 percrank means the highest biomass.
+    ## greater rank percentile means that it is more abundant.
 
-
-## Calc mean rank & yrs present ####
+## Calc Mean Rank & Yrs Present ####
 # mean rank percentile, sum number of years present, for each species in each plot.
 categorydat <- datrank %>%
   group_by(field, plot, subplot, rainfall, species) %>%
@@ -68,7 +69,8 @@ nyearsdat <- datrank %>%
 summary(nyearsdat)
 # 7-9 years
 
-## Create nicknames & categories ####
+## Create Categories ####
+### Subplot Level ####
 catdat <- categorydat %>%
   merge(y = nyearsdat) %>%
   mutate(persist_pct = yrs_present / n_years,
@@ -86,6 +88,7 @@ catdat <- categorydat %>%
 
 ## this currently has everything classified at the subplot level. I believe I need to do this at the field level so that there is one classification for each species. 
 
+### Field Level ####
 ## Retrying classification at the field level.
 field_catdat <- categorydat %>%
   merge(y = nyearsdat) %>%
@@ -103,16 +106,5 @@ field_catdat <- categorydat %>%
                        nickname = c("TransSub", "TransDom", "CoreSub", "CoreDom")) ) %>%
   mutate(nickname = factor(nickname, levels = c("CoreDom", "CoreSub", "TransDom", "TransSub")))
 
-
-# Separate dataframes by site ####
-Edge_blue <- catdat %>%
-  filter(field == "EDGE_blue") %>%
-  mutate(unique_ID = paste(plot, subplot, rainfall,species, sep = "_"))
-
-Edge_black <- catdat %>%
-  filter(field == "EDGE_black") %>%
-  mutate(unique_ID = paste(plot, subplot, rainfall,species, sep = "_"))
-
-
-## clean up environment
+# Clean up environment ####
 rm(list = c("categorydat", "datrank", "sev_edge_clean", "nyearsdat"))

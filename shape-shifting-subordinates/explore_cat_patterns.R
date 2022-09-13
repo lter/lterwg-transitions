@@ -1,13 +1,23 @@
 
+## Script name: Exploring Rarity Category Patterns
+##
+## Purpose of script: explore patterns in categories' responses to drought
+##
+## Author: Carmen Watkins
+##
+## Email: cebel2@uoregon.edu
+
+
 # Load Data ####
 source("shape-shifting-subordinates/sev_rarity_categorization.R")
 
-# Combine Ctrl w/Tx ####
+# Merge Ctrl & Tx Data ####
 ## first combine the field averaged control data with the drought treatment data
 alldat <- left_join(dat, field_catdat, by = c("field", "species")) %>%
   filter(rainfall != "D") ## remove monsoon timing treatment
 
 # Exploratory Visualization ####
+## filter fields separately
 blu_dat <- alldat %>%
   filter(field == "EDGE_blue")
 blk_dat <- alldat %>%
@@ -18,70 +28,85 @@ ggplot(blu_dat, aes(x = rainfall)) +
   geom_bar() +
   facet_wrap(~combo) +
   ggtitle("EDGE Blue Field")
-ggsave("shape-shifting-subordinates/blu-cats-by-trt.png", width = 4.25, height = 3)
+ggsave("shape-shifting-subordinates/preliminary_figs/blu-cats-by-trt.png", width = 4.25, height = 3)
 
 ggplot(blk_dat, aes(x = rainfall)) +
   geom_bar() +
   facet_wrap(~combo) +
   ggtitle("EDGE Black Field")
-ggsave("shape-shifting-subordinates/blk-cats-by-trt.png", width = 4.25, height = 3)
+ggsave("shape-shifting-subordinates/preliminary_figs/blk-cats-by-trt.png", width = 4.25, height = 3)
 
-## Sp Abund Changes ####
-## then look at how species abundances in each category change?
+# Sp Abund Changes ####
 
-### Through time ####
+## Through time ####
+### Black field ####
+## average data across each species
 blkavg <- blk_dat %>%
   group_by(year, rainfall, nickname, species) %>%
-  summarise(mean_abund = mean(abundance, na.rm = T), rank = mean(mrank), ppct = mean(mpersist_pct))
+  summarise(mean_abund = mean(abundance, na.rm = T), rank = mean(mrank), ppct = mean(mpersist_pct)) %>%
+  filter(!is.na(nickname))
 
-bk_ts <- blkavg %>%
-  filter(nickname == "TransSub")
-bk_td <- blkavg %>%
-  filter(nickname == "TransDom")
-bk_cs <- blkavg %>%
-  filter(nickname == "CoreSub")
-bk_cd <- blkavg %>%
-  filter(nickname == "CoreDom")
-
-
+## graph abundance through time for each category
 ggplot(blkavg, aes(x=year, y=mean_abund, color = species)) +
   geom_line() +
   facet_wrap(~nickname*rainfall)
+    ## hard to make comparisons from this fig with all cats in one df
+    ## particularly hard to see the low abundance species
 
-ggplot(bk_ts, aes(x=year, y=mean_abund, color = species)) +
+
+## graph categories separately
+ggplot(blkavg[blkavg$nickname=="TransSub",], aes(x=year, y=mean_abund, color = species)) +
   geom_line() +
   facet_wrap(~rainfall)
-ggsave("shape-shifting-subordinates/ts_bk_timeseries.png", width = 6, height = 3.5)
+#ggsave("shape-shifting-subordinates/ts_bk_timeseries.png", width = 6, height = 3.5)
 
-ggplot(bk_td, aes(x=year, y=mean_abund, color = species)) +
+ggplot(blkavg[blkavg$nickname=="TransDom",], aes(x=year, y=mean_abund, color = species)) +
   geom_line() +
   facet_wrap(~rainfall)
-ggsave("shape-shifting-subordinates/td_bk_timeseries.png", width = 6, height = 3.5)
+#ggsave("shape-shifting-subordinates/td_bk_timeseries.png", width = 6, height = 3.5)
 
-ggplot(bk_cs, aes(x=year, y=mean_abund, color = species)) +
+ggplot(blkavg[blkavg$nickname=="CoreSub",], aes(x=year, y=mean_abund, color = species)) +
   geom_line() +
   facet_wrap(~rainfall)
-ggsave("shape-shifting-subordinates/cs_bk_timeseries.png", width = 6, height = 3.5)
+#ggsave("shape-shifting-subordinates/cs_bk_timeseries.png", width = 6, height = 3.5)
 
-ggplot(bk_cd, aes(x=year, y=mean_abund, color = species)) +
+ggplot(blkavg[blkavg$nickname=="CoreDom",], aes(x=year, y=mean_abund, color = species)) +
   geom_line() +
   facet_wrap(~rainfall)
-ggsave("shape-shifting-subordinates/cd_bk_timeseries.png", width = 6, height = 3.5)
+#ggsave("shape-shifting-subordinates/cd_bk_timeseries.png", width = 6, height = 3.5)
 
 
 
-
+### Blue Field ####
 bluavg <- blu_dat %>%
   group_by(year, rainfall, nickname, species) %>%
-  summarise(mean_abund = mean(abundance, na.rm = T), rank = mean(mrank), ppct = mean(mpersist_pct))
-
+  summarise(mean_abund = mean(abundance, na.rm = T), rank = mean(mrank), ppct = mean(mpersist_pct)) %>%
+  filter(!is.na(nickname))
 
 ggplot(bluavg, aes(x=year, y=mean_abund, color = species)) +
   geom_line() +
   facet_wrap(~nickname*rainfall)
 
-### Control - Drought ####
-#### Black Field ####
+## graph categories separately
+ggplot(bluavg[bluavg$nickname=="TransSub",], aes(x=year, y=mean_abund, color = species)) +
+  geom_line() +
+  facet_wrap(~rainfall)
+
+ggplot(bluavg[bluavg$nickname=="TransDom",], aes(x=year, y=mean_abund, color = species)) +
+  geom_line() +
+  facet_wrap(~rainfall)
+
+ggplot(bluavg[bluavg$nickname=="CoreSub",], aes(x=year, y=mean_abund, color = species)) +
+  geom_line() +
+  facet_wrap(~rainfall)
+
+ggplot(bluavg[bluavg$nickname=="CoreDom",], aes(x=year, y=mean_abund, color = species)) +
+  geom_line() +
+  facet_wrap(~rainfall)
+
+
+## Control - Drought ####
+### Black Field ####
 blk <- blk_dat %>%
   group_by(rainfall, species, nickname) %>%
   summarise(mean_abund = mean(abundance, na.rm = T)) %>%
@@ -89,17 +114,14 @@ blk <- blk_dat %>%
   mutate(abund_diff = C - E)
 
 ggplot(blk, aes(x=nickname, y=abund_diff)) +
-  geom_point(size = 3, pch = 21) +
+  geom_boxplot() +
   geom_hline(yintercept = 0, linetype = "dashed") +
   xlab("") + ylab("Control - Drought Biomass (g)") +
-  ggtitle("Black Field")
+  ggtitle("Black Field") +
+  coord_cartesian(ylim = c(-51,40))
+ggsave("shape-shifting-subordinates/preliminary_figs/d_sensitivity_box_blk.png", width = 4, height = 3.5)
 
-ggsave("shape-shifting-subordinates/d_sensitivity_blk.png", width = 4, height = 3.5)
-
-
-
-
-#### Blue Field ####
+### Blue Field ####
 blu <- blu_dat %>%
   group_by(rainfall, species, nickname) %>%
   summarise(mean_abund = mean(abundance, na.rm = T)) %>%
@@ -107,31 +129,16 @@ blu <- blu_dat %>%
   mutate(abund_diff = C - E)
 
 ggplot(blu, aes(x=nickname, y=abund_diff)) +
-  geom_point(size = 3, pch = 21) +
-  geom_hline(yintercept = 0, linetype = "dashed") +
-  xlab("") + ylab("Control - Drought Biomass (g)") +
-  ggtitle("Blue Field")
-
-ggsave("shape-shifting-subordinates/d_sensitivity_blu.png", width = 4, height = 3.5)
-
-
-ggplot(blk, aes(x=nickname, y=abund_diff)) +
-  geom_boxplot() +
-  geom_hline(yintercept = 0, linetype = "dashed") +
-  xlab("") + ylab("Control - Drought Biomass (g)") +
-  ggtitle("Black Field") +
-  coord_cartesian(ylim = c(-51,40))
-ggsave("shape-shifting-subordinates/d_sensitivity_box_blk.png", width = 4, height = 3.5)
-ggplot(blu, aes(x=nickname, y=abund_diff)) +
   geom_boxplot() +
   geom_hline(yintercept = 0, linetype = "dashed") +
   xlab("") + ylab("Control - Drought Biomass (g)") +
   ggtitle("Blue Field") +
   coord_cartesian(ylim = c(-51,40))
-ggsave("shape-shifting-subordinates/d_sensitivity_box_blu.png", width = 4, height = 3.5)
+ggsave("shape-shifting-subordinates/preliminary_figs/d_sensitivity_box_blu.png", width = 4, height = 3.5)
 
 
-## Abund vs. Persistence ####
+# Future Directions ####
+## Abund vs. Persistence? ####
 ggplot(blk_dat, aes(y=abundance, x=mrank)) +
   geom_point()
 ggplot(blk_dat, aes(y=abundance, x=mpersist_pct)) +
@@ -142,6 +149,3 @@ ggplot(blk_dat, aes(y=abundance, x=mrank, size = mpersist_pct)) +
   geom_point() +
   facet_wrap(~rainfall)
 
-
-## showing some sort of difference from control would be ideal.
-## also look at species level variance?
