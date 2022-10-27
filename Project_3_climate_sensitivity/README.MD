@@ -1,5 +1,5 @@
 # Project 3 - Climate sensitivity functions
-... what is the snappy acronym for this project. 
+... what is the snappy acronym for this sub project? 
 
 ## Suggested workflow for testing CSF code on other datasets
 
