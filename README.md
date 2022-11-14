@@ -43,3 +43,7 @@ Library(tidyverse)
 
 
 ```
+
+## Supplementary Resources
+
+NCEAS Scientific Computing Support Team page [link](https://nceas.github.io/scicomp.github.io)
