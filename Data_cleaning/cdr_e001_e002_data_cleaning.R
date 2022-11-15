@@ -99,3 +99,4 @@ cdr_clean <- cdr_clean %>%
          species != "ambrosia sp.")
 
 rm(cdr2, cdr_e002)
+
