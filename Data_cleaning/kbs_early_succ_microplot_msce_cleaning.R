@@ -3,7 +3,7 @@
 
 ## Data manipulation packages
 library(tidyverse)
-library(googledrive)
+library(googledrive)#read this tutorial to setup the Google account permissions https://nceas.github.io/scicomp.github.io/tutorials.html#using-the-googledrive-r-package
 
 #Create directory for file download 
 # I put this directory in to the .gitignore so it does not affect the repository when changes are pushed
@@ -13,9 +13,14 @@ dir.create("raw_data_GDrive", showWarnings = F)
 #Don't need to change this since this is where all of the raw files are located
 files_ls=drive_ls(as_id("https://drive.google.com/drive/folders/1I_RFbh_YkkYHapP7H0J3gXXkUf6-nmqL"))
 
+#Google asks for access to the pre-authorized Google account 
+#my account is under "1" yours may be different 
+
+
 #Download the dataset based on the file name in the directory
 drive_download(file = subset(files_ls,name=="KBS_early_successional_microplot_split_spp_2019.csv"),
-               path = "raw_data_GDrive/KBS_early_successional_microplot_split_spp_2019.csv")
+               path = "raw_data_GDrive/KBS_early_successional_microplot_split_spp_2019.csv",
+               overwrite = TRUE)#Overwrite is in included so you can replace older versions
 
 
 #load data from the directory
@@ -58,7 +63,7 @@ KBS_spp<-KBS_spp|>
 ## Clean up data kbs early succession
 
 KBS_spp_clean <- KBS_spp %>%
-  tbl_df() %>%
+  tibble::as_tibble() %>%
   dplyr::select(-method, -sample_date,-month) %>%  # Remove unwanted columns
   tibble::as_tibble() %>%
   ## format column names to match the rest of the datasets
