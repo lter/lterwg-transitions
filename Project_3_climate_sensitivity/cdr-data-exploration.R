@@ -3,8 +3,9 @@ cdr_climate <- read.csv("cdr_weather.csv")
 
 cdr_climate$newdate <- strptime(as.character(cdr_climate$Date), "%m/%d/%y")
 cdr_climate$nd <- format(cdr_climate$newdate, "%Y-%m-%d")
-### R automatically makes years ending in 00 - 68 to 2000s, so need to change 62 - 68 to 1900s
-
+tmp <- as.POSIXlt(cdr_climate$nd, format = "%Y-%m-%d")
+tmp$yday### R automatically makes years ending in 00 - 68 to 2000s, so need to change 62 - 68 to 1900s
+cdr_climate$julian_day <- tmp$yday
 cdr_climate$year <- substr(cdr_climate$nd, 1, 4) ##just the year
 
 group_1900 <- filter(cdr_climate, year > 2017)
@@ -17,15 +18,16 @@ group_1900$year <- correct_years_1900
 cdr_climate_final <- rbind(group_1900, group_2000)
 names(cdr_climate_final)
 
-cdrclim <- cdr_climate_final[,c(1,4,10)]
-
+cdrclim <- cdr_climate_final[,c(1,4,7,10)]
+cdrclim$growing_season <- ifelse(cdrclim$julian_day >= 91 & cdrclim$julian_day <= 273, "growingseason", "notgrowingseason")
 cdrclim1 <- cdrclim %>%
+  filter(growing_season == "growingseason") %>%
   group_by(year) %>%
   summarize(MAP_mm = sum(25.4*Precip.inches.)) ## change inches to millimeters
 
 cdrclim1$year <- as.numeric(cdrclim1$year)
 
-ggplot(cdrclim1, aes(MAP_mm)) +
+density_plot <- ggplot(cdrclim1, aes(MAP_mm)) +
   geom_density() +
   theme_bw()
 cdr_clean_no_na <- na.omit(cdr_clean)
@@ -38,7 +40,8 @@ cdr_clim_anpp_full <- left_join(cdrclim1, cdr_anpp_full, by = "year") ##use for 
 cdr_clim_anpp_full <- na.omit(cdr_clim_anpp_full)
 
 cdr_anpp_plot <- cdr_anpp_full %>%
-  group_by(year, site, nadd, ncess) %>%
+  filter(ncess == 0) %>%
+  group_by(year, site, nadd) %>%
   summarize(ANPP = mean(NPP))
 
 cdr_anpp_plot$year <- as.numeric(cdr_anpp_plot$year)
@@ -53,7 +56,23 @@ ggplot(cca, aes(x = MAP_mm, y = ANPP)) +
   facet_wrap(~nadd) +
   #geom_smooth(method = "loess", se = F) +
   theme_bw() 
-ccaf <- cdr_clim_anpp_full
+
+ggplot(cdrclim1, aes(x = year, y = MAP_mm)) +
+  geom_point() +
+  theme_bw()
+cdrclim1$yaxis_plotting <- rnorm(55, mean = 0.0005, sd = 0.0001) ## making a y-axis variable to plot precip on density plot
+quantile(cdrclim1$MAP_mm, c(0.05, 0.95)) ## find 5th and 9th percentile
+cdrclim1$anomalies <- ifelse(cdrclim1$MAP_mm >= 807.9994, "anomaly",
+                             ifelse(cdrclim1$MAP_mm <= 309.8546, "anomaly", "normal")) ## classify 
+
+
+density_plot + 
+  geom_point(data = cdrclim1, aes(x = MAP_mm, y = yaxis_plotting, color = anomalies)) +
+  geom_vline(xintercept = 309.8546, linetype = 2) +
+  geom_vline(xintercept = 807.9994, linetype = 2)
+
+##these are data from 1982 to 2017 -- 35 years of data, with 6 anomalous years, three dry and three wet
+ccaf <- cdr_clim_anpp_full ## making a shorter name
 
 
 
@@ -121,10 +140,10 @@ visreg(fit=m.Ci,"MAP_mm",type="conditional",by="nadd",gg=TRUE,partial=F,rug=F)+
 
 #Alternative visualization code if the above doesn't work
 ccaf$predicted<-predict(m.Ci, ccaf)
-ggplot(ccaf, aes(x=MAP_mm, y=predicted)) +
+ggplot() +
   facet_wrap(~nadd)+
-  geom_point(aes(x=MAP_mm, y=NPP), color="gray60", size=0.5) +
-  geom_smooth(aes(y=predicted), color="gray20")+
+  geom_point(data = cca, aes(x=MAP_mm, y=ANPP), color="gray60", size=0.5) +
+  geom_smooth(data = ccaf, aes(x = MAP_mm, y=predicted), color="gray20")+
   theme_bw()+
   theme(panel.grid.major = element_blank(),panel.grid.minor = element_blank())+ 
   labs(x="MAP_mm",
@@ -182,14 +201,14 @@ m.Ci<-lme(NPP~MAP_mm*nadd+I(MAP_mm^2)*nadd+I(MAP_mm^3)*nadd,data=andro_ccaf,rand
 # model selection
 AICc(m.null, m.La,m.Li,m.Qa,m.Qi,m.Ca,m.Ci)
 min(AICc(m.null, m.La,m.Li,m.Qa,m.Qi,m.Ca,m.Ci)[,2])
-#Best model is m.null, but within 3 of m.Qa and m.Ca
+#Best model is m.Qa, but within 3 of m.Qa and m.Ca
 m.Ci
 
-andro_ccaf$predicted<-predict(m.null, andro_ccaf)
-andro_plot <- ggplot(andro_ccaf, aes(x=MAP_mm, y=predicted)) +
+andro_ccaf$predicted<-predict(m.Qa, andro_ccaf)
+andro_plot <- ggplot() +
   facet_wrap(~nadd)+
-  geom_point(aes(x=MAP_mm, y=NPP), color="gray60", size=0.5) +
-  geom_smooth(aes(y=predicted), color="gray20")+
+  geom_point(data = andro_cca, aes(x=MAP_mm, y=ANPP), color="gray60", size=0.5) +
+  geom_smooth(data = andro_ccaf, aes(x = MAP_mm, y=predicted), color="gray20")+
   theme_bw()+
   theme(panel.grid.major = element_blank(),panel.grid.minor = element_blank())+ 
   labs(x="MAP_mm",
@@ -239,17 +258,16 @@ min(AICc(m.null, m.La,m.Li,m.Qa,m.Qi,m.Ca,m.Ci)[,2])
 m.Ci
 
 agro_ccaf$predicted<-predict(m.Ci, agro_ccaf)
-agro_plot <- ggplot(agro_ccaf, aes(x=MAP_mm, y=predicted, color = year)) +
+agro_plot <- ggplot() +
   facet_wrap(~nadd)+
-  geom_point(aes(x=MAP_mm, y=NPP), color="gray60", size=0.5) +
-  geom_smooth(aes(y=predicted), color="gray20")+
+  geom_point(data = agro_cca, aes(x=MAP_mm, y=ANPP), color="gray60", size=0.5) +
+  geom_smooth(data = agro_ccaf, aes(x = MAP_mm, y=predicted), color="gray20")+
   theme_bw()+
   theme(panel.grid.major = element_blank(),panel.grid.minor = element_blank())+ 
   labs(x="MAP_mm",
        y="ANPP") +
   scale_y_continuous(limits = c(0,1000))
-max(agro_ccaf$MAP_mm)
- 
+
 ### schiz ####
 schiz$year <- as.numeric(schiz$year)
 schiz_full <- schiz %>%
@@ -292,10 +310,10 @@ min(AICc(m.null, m.La,m.Li,m.Qa,m.Qi,m.Ca,m.Ci)[,2])
 m.Ci
 
 schiz_ccaf$predicted<-predict(m.Ci, schiz_ccaf)
-schiz_plot <- ggplot(schiz_ccaf, aes(x=MAP_mm, y=predicted)) +
+schiz_plot <- ggplot() +
   facet_wrap(~nadd)+
-  geom_point(aes(x=MAP_mm, y=NPP), color="gray60", size=0.5) +
-  geom_smooth(aes(y=predicted), color="gray20")+
+  geom_point(data = schiz_cca, aes(x=MAP_mm, y=ANPP), color="gray60", size=0.5) +
+  geom_smooth(data = schiz_ccaf, aes(x = MAP_mm, y=predicted), color="gray20")+
   theme_bw()+
   theme(panel.grid.major = element_blank(),panel.grid.minor = element_blank())+ 
   labs(x="MAP_mm",
@@ -345,10 +363,10 @@ min(AICc(m.null, m.La,m.Li,m.Qa,m.Qi,m.Ca,m.Ci)[,2])
 m.Ci
 
 poa_ccaf$predicted<-predict(m.null, poa_ccaf)
-poa_plot <- ggplot(poa_ccaf, aes(x=MAP_mm, y=predicted)) +
+poa_plot <- ggplot() +
   facet_wrap(~nadd)+
-  geom_point(aes(x=MAP_mm, y=NPP), color="gray60", size=0.5) +
-  geom_smooth(aes(y=predicted), color="gray20")+
+  geom_point(data = poa_cca, aes(x=MAP_mm, y=ANPP), color="gray60", size=0.5) +
+  geom_smooth(data = poa_ccaf, aes(x = MAP_mm, y=predicted), color="gray20")+
   theme_bw()+
   theme(panel.grid.major = element_blank(),panel.grid.minor = element_blank())+ 
   labs(x="MAP_mm",
@@ -357,9 +375,8 @@ poa_plot <- ggplot(poa_ccaf, aes(x=MAP_mm, y=predicted)) +
 poa_plot
 
 
-### all plots####
-
+### all plots ####
 andro_plot ## null
 agro_plot ## cubic
 schiz_plot ## cubic
-poa_plot ##null
+poa_plot ## null
