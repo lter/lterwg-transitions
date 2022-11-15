@@ -249,7 +249,7 @@ agro_plot <- ggplot(agro_ccaf, aes(x=MAP_mm, y=predicted, color = year)) +
        y="ANPP") +
   scale_y_continuous(limits = c(0,1000))
 max(agro_ccaf$MAP_mm)
-
+ 
 ### schiz ####
 schiz$year <- as.numeric(schiz$year)
 schiz_full <- schiz %>%
