@@ -46,12 +46,11 @@ rm( df)
 
 ### Originally there were two sampling dates per year
 ### We will only use the sampling at the end of the summer
-### Also let's remove the disturbed plots
-head(KBS_spp)
+
+
 KBS_spp<-KBS_spp|>
   group_by(Year,treatment,replicate,fertilized)|>
-  top_n(1,as.Date(sample_date))|>
-  filter(disturbed=="undisturbed")
+  top_n(1,as.Date(sample_date))
 
 
 
@@ -60,7 +59,7 @@ KBS_spp<-KBS_spp|>
 
 KBS_spp_clean <- KBS_spp %>%
   tbl_df() %>%
-  dplyr::select(-method, -disturbed,-sample_date,-month) %>%  # Remove unwanted columns
+  dplyr::select(-method, -sample_date,-month) %>%  # Remove unwanted columns
   tibble::as_tibble() %>%
   ## format column names to match the rest of the datasets
   dplyr::mutate(site = "kbs",
@@ -78,6 +77,7 @@ KBS_spp_clean <- KBS_spp %>%
                 burn = "0",
                 rainfall = "0", 
                 warm = "0",
+                disturbance=disturbed, #plots were tilled or untilled
                 unitAbund = "biomass_g_m2",
                 scaleAbund = area_sampled, 
                 species = species,
@@ -90,5 +90,5 @@ KBS_spp_clean <- KBS_spp %>%
 
 
 
-rm(KBS_spp)
+rm(KBS_spp, KBS_split_spp, files_ls)
 
