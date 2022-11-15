@@ -239,7 +239,7 @@ min(AICc(m.null, m.La,m.Li,m.Qa,m.Qi,m.Ca,m.Ci)[,2])
 m.Ci
 
 agro_ccaf$predicted<-predict(m.Ci, agro_ccaf)
-agro_plot <- ggplot(agro_ccaf, aes(x=MAP_mm, y=predicted)) +
+agro_plot <- ggplot(agro_ccaf, aes(x=MAP_mm, y=predicted, color = year)) +
   facet_wrap(~nadd)+
   geom_point(aes(x=MAP_mm, y=NPP), color="gray60", size=0.5) +
   geom_smooth(aes(y=predicted), color="gray20")+
@@ -248,6 +248,7 @@ agro_plot <- ggplot(agro_ccaf, aes(x=MAP_mm, y=predicted)) +
   labs(x="MAP_mm",
        y="ANPP") +
   scale_y_continuous(limits = c(0,1000))
+max(agro_ccaf$MAP_mm)
 
 ### schiz ####
 schiz$year <- as.numeric(schiz$year)
@@ -358,7 +359,7 @@ poa_plot
 
 ### all plots####
 
-andro_plot
-agro_plot
-schiz_plot
-poa_plot
+andro_plot ## null
+agro_plot ## cubic
+schiz_plot ## cubic
+poa_plot ##null
