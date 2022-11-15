@@ -376,7 +376,6 @@ poa_plot
 
 
 ### all plots ####
-
 andro_plot ## null
 agro_plot ## cubic
 schiz_plot ## cubic
