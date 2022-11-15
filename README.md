@@ -43,6 +43,8 @@ Library(tidyverse)
 
 
 ```
+##Links to project-specific repos
+CSF project: https://github.com/WildEcology/Transitions_CSF
 
 ## Supplementary Resources
 
