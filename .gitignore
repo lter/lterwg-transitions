@@ -39,6 +39,14 @@ vignettes/*.pdf
 # R Environment Variables
 .Renviron
 
+<<<<<<< HEAD
+# Beta testing code for the long term perturbation experiments 
+
+Beta_testing/
+
+=======
 # Folders
 Reading*Assignments/
 Search*Results/
+>>>>>>> 635c8fa27744675af891b3f72094fd75cab5bea2
+raw_data_GDrive/
