@@ -15,7 +15,7 @@ library(piecewiseSEM)
 
 #Read in cleaned experiment data and climate data
 exp.dat<-read.csv(here::here("Project_3_climate_sensitivity","sev_nfert_clean.csv"))
-clim.dat<-read.csv(here::here("Project_3_climate_sensitivity","sev_nfert_clim.csv"))
+clim.dat2<-read.csv(here::here("Project_3_climate_sensitivity","sev_nfert_clim.csv"))
 
 #Data reshaping and combining----------------------
 #get rid of first column if row names read in as first column
