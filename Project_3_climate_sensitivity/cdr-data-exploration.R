@@ -7,6 +7,7 @@ tmp <- as.POSIXlt(cdr_climate$nd, format = "%Y-%m-%d")
 tmp$yday### R automatically makes years ending in 00 - 68 to 2000s, so need to change 62 - 68 to 1900s
 cdr_climate$julian_day <- tmp$yday
 cdr_climate$year <- substr(cdr_climate$nd, 1, 4) ##just the year
+cdr_climate$month <- substr(cdr_climate$nd, 6, 7) ##just the month
 
 group_1900 <- filter(cdr_climate, year > 2017)
 years_1900 <- group_1900[,10]
@@ -19,7 +20,10 @@ cdr_climate_final <- rbind(group_1900, group_2000)
 names(cdr_climate_final)
 
 cdrclim <- cdr_climate_final[,c(1,4,7,10)]
-cdrclim$growing_season <- ifelse(cdrclim$julian_day >= 91 & cdrclim$julian_day <= 273, "growingseason", "notgrowingseason")
+cdrtemp <- cdr_climate_final[,c(1,2,9,10)]
+
+#### precip data ####
+cdrclim$growing_season <- ifelse(cdrclim$julian_day >= 91 & cdrclim$julian_day <= 212, "growingseason", "notgrowingseason")
 cdrclim1 <- cdrclim %>%
   filter(growing_season == "growingseason") %>%
   group_by(year) %>%
@@ -62,11 +66,11 @@ ggplot(cdrclim1, aes(x = year, y = MAP_mm)) +
   theme_bw()
 cdrclim1$yaxis_plotting <- rnorm(55, mean = 0.0005, sd = 0.0001) ## making a y-axis variable to plot precip on density plot
 quantile(cdrclim1$MAP_mm, c(0.05, 0.95)) ## find 5th and 9th percentile
-cdrclim1$anomalies <- ifelse(cdrclim1$MAP_mm >= 807.9994, "anomaly",
-                             ifelse(cdrclim1$MAP_mm <= 309.8546, "anomaly", "normal")) ## classify 
+cdrclim1$anomalies <- ifelse(cdrclim1$MAP_mm >= 581.9394, "anomaly",
+                             ifelse(cdrclim1$MAP_mm <= 162.9664, "anomaly", "normal")) ## classify 
 
 
-density_plot + 
+density_plus_points <- density_plot + 
   geom_point(data = cdrclim1, aes(x = MAP_mm, y = yaxis_plotting, color = anomalies)) +
   geom_vline(xintercept = 309.8546, linetype = 2) +
   geom_vline(xintercept = 807.9994, linetype = 2)
@@ -140,7 +144,7 @@ visreg(fit=m.Ci,"MAP_mm",type="conditional",by="nadd",gg=TRUE,partial=F,rug=F)+
 
 #Alternative visualization code if the above doesn't work
 ccaf$predicted<-predict(m.Ci, ccaf)
-ggplot() +
+total_anpp_plot <- ggplot() +
   facet_wrap(~nadd)+
   geom_point(data = cca, aes(x=MAP_mm, y=ANPP), color="gray60", size=0.5) +
   geom_smooth(data = ccaf, aes(x = MAP_mm, y=predicted), color="gray20")+
@@ -259,7 +263,7 @@ m.Ci
 
 agro_ccaf$predicted<-predict(m.Ci, agro_ccaf)
 agro_plot <- ggplot() +
-  facet_wrap(~nadd)+
+  facet_wrap(~nadd, scales = "free")+
   geom_point(data = agro_cca, aes(x=MAP_mm, y=ANPP), color="gray60", size=0.5) +
   geom_smooth(data = agro_ccaf, aes(x = MAP_mm, y=predicted), color="gray20")+
   theme_bw()+
@@ -267,7 +271,17 @@ agro_plot <- ggplot() +
   labs(x="MAP_mm",
        y="ANPP") +
   scale_y_continuous(limits = c(0,1000))
-
+ggplot(agro_ccaf, aes(x = MAP_mm, y = NPP)) +
+  facet_wrap(~nadd, scales = "free")+
+  geom_point(aes(x=MAP_mm, y=NPP), color="gray60", size=0.5) +
+  geom_smooth(aes(x = MAP_mm, y=predicted), color="gray20")+
+  theme_bw()+
+  theme(panel.grid.major = element_blank(),panel.grid.minor = element_blank())+ 
+  labs(x="MAP_mm",
+       y="ANPP") +
+  scale_y_continuous(limits = c(0,1000))
+max(agro_ccaf$NPP)
+max_agro <- filter(agro_ccaf, NPP == max(agro_ccaf$NPP))
 ### schiz ####
 schiz$year <- as.numeric(schiz$year)
 schiz_full <- schiz %>%
@@ -376,7 +390,179 @@ poa_plot
 
 
 ### all plots ####
-andro_plot ## null
+
+density_plot
+density_plus_points
+total_anpp_plot ## cubic
+andro_plot ## quadratic
 agro_plot ## cubic
 schiz_plot ## cubic
 poa_plot ## null
+
+
+### maximum temperature ####
+cdrtemp$growing_season <- ifelse(cdrtemp$julian_day >= 152 & cdrtemp$julian_day <= 212, "growingseason", "notgrowingseason")
+cdrtemp1 <- cdrtemp %>%
+  filter(growing_season == "growingseason") %>%
+  group_by(year) %>%
+  summarize(max_temp = mean((MaxTemp.degF.-32)*(5/9))) ## change inches to millimeters
+
+cdrtemp1$year <- as.numeric(cdrtemp1$year)
+
+density_plot <- ggplot(cdrtemp1, aes(max_temp)) +
+  geom_density() +
+  theme_bw()
+cdr_clean_no_na <- na.omit(cdr_clean)
+cdr_clean_no_na$year <- as.numeric(cdr_clean_no_na$year)
+cdr_anpp_full <- cdr_clean_no_na %>%
+  group_by(year, site, plot, nadd, ncess, uniqueID) %>%
+  summarize(NPP = sum(abundance)) 
+
+cdr_temp_anpp_full <- left_join(cdrtemp1, cdr_anpp_full, by = "year") ##use for models
+cdr_temp_anpp_full <- na.omit(cdr_temp_anpp_full)
+
+cdr_anpp_plot <- cdr_anpp_full %>%
+  filter(ncess == 0) %>%
+  group_by(year, site, nadd) %>%
+  summarize(ANPP = mean(NPP))
+
+cdr_anpp_plot$year <- as.numeric(cdr_anpp_plot$year)
+str(cdr_anpp_plot)
+cdr_temp_anpp_plot <- left_join(cdrtemp1, cdr_anpp_plot, by = "year")
+cca <- na.omit(cdr_temp_anpp_plot)
+str(cca)
+cca$N <- ifelse(cca$nadd == 0, 0, 1)
+
+ggplot(cca, aes(x = max_temp, y = ANPP)) +
+  geom_point() +
+  facet_wrap(~nadd) +
+  #geom_smooth(method = "loess", se = F) +
+  theme_bw() 
+
+ggplot(cdrtemp1, aes(x = year, y = max_temp)) +
+  geom_point() +
+  theme_bw()
+cdrtemp1$yaxis_plotting <- rnorm(55, mean = 0.05, sd = 0.01) ## making a y-axis variable to plot precip on density plot
+quantile(cdrtemp1$max_temp, c(0.05, 0.95)) ## find 5th and 9th percentile
+cdrtemp1$anomalies <- ifelse(cdrtemp1$max_temp >= 29.48921, "anomaly",
+                             ifelse(cdrtemp1$max_temp <= 25.03916, "anomaly", "normal")) ## classify 
+
+
+density_plus_points <- density_plot + 
+  geom_point(data = cdrtemp1, aes(x = max_temp, y = yaxis_plotting, color = anomalies)) +
+  geom_vline(xintercept = 25.03916, linetype = 2) +
+  geom_vline(xintercept = 29.48921, linetype = 2)
+
+##these are data from 1982 to 2017 -- 35 years of data, with 6 anomalous years, three dry and three wet
+ccaf <- cdr_temp_anpp_full ## making a shorter name
+
+library(here)
+library(vegan)
+library(tidyverse)
+library(nlme)
+library(emmeans)
+library(MuMIn)
+library(visreg)
+library(car)
+library(piecewiseSEM)
+
+#Candidate model set
+#L=linear, Q=quadratic, C=cubic, a=additive, i=interaction
+m.null<-lme(NPP~year*nadd,data=ccaf,random=~1|uniqueID,method="ML")
+m.La<-lme(NPP~max_temp+nadd,data=ccaf,random=~1|uniqueID,method="ML")
+m.Li<-lme(NPP~max_temp*nadd,data=ccaf,random=~1|uniqueID,method="ML")
+m.Qa<-lme(NPP~max_temp+nadd+I(max_temp^2),data=ccaf,random=~1|uniqueID,method="ML")
+m.Qi<-lme(NPP~max_temp*nadd+I(max_temp^2)*nadd,data=ccaf,random=~1|uniqueID,method="ML")
+m.Ca<-lme(NPP~max_temp+nadd+I(max_temp^2)+I(max_temp^3),data=ccaf,random=~1|uniqueID,method="ML")
+m.Ci<-lme(NPP~max_temp*nadd+I(max_temp^2)*nadd+I(max_temp^3)*nadd,data=ccaf,random=~1|uniqueID,method="ML")
+
+# model selection
+AICc(m.null, m.La,m.Li,m.Qa,m.Qi,m.Ca,m.Ci)
+min(AICc(m.null, m.La,m.Li,m.Qa,m.Qi,m.Ca,m.Ci)[,2])
+#Best model is m.Ci, but within 22 of m.Qi
+m.Ci
+ccaf$predicted<-predict(m.null, ccaf)
+total_anpp_plot <- ggplot() +
+  facet_wrap(~nadd, scales = "free")+
+  geom_point(data = cca, aes(x=max_temp, y=ANPP), color="gray60", size=0.5) +
+  geom_smooth(data = ccaf, aes(x = max_temp, y=predicted), color="gray20")+
+  theme_bw()+
+  theme(panel.grid.major = element_blank(),panel.grid.minor = element_blank())+ 
+  labs(x="max_temp",
+       y="ANPP") 
+
+
+#### looking at ANPP vs. MAT, MAP, and SPEI ####
+names(cdr_climate_final)
+
+cdr_full <- cdr_climate_final[,c(2,4,10,11)]
+cdr_full <- filter(cdr_full, year != 1962)
+cdr_full1 <- cdr_full %>%
+  group_by(month, year) %>%
+  summarize(MAP_mm = sum(25.4*Precip.inches.),
+            max_temp_c = mean((MaxTemp.degF. - 32)*(5/9)))
+library(SPEI)
+
+#Calculate balances
+
+cdr_full1$PET <- thornthwaite(cdr_full1$max_temp_c, 45.4017)
+cdr_full1$BAL <- cdr_full1$MAP_mm - cdr_full1$PET
+summary(cdr_full1)
+ggplot(cdr_full1,aes(x=year, y=BAL))+geom_point(aes(color=month))
+cdr_full1$month <- as.numeric(cdr_full1$month)
+cdr_full1$year <- as.numeric(cdr_full1$year)
+cdr_full2 <- cdr_full1[,c(2,1,3:ncol(cdr_full1))]
+cdr_full1_ts = ts(cdr_full1[,-c(1,2)],end = c(2016,12), frequency=12)
+
+library(ggpp)
+#6 month spei 
+spei_cdr6=spei(cdr_full1_ts[,"BAL"], 6)
+spei_cdr6_df = try_data_frame(spei_cdr6$fitted)
+colnames(spei_cdr6_df)=c("time","SPEI_6m")
+head(spei_cdr6_df)
+spei_cdr6_df$year=format(as.Date(spei_cdr6_df$time),"%Y")
+spei_cdr6_df$month=format(as.Date(spei_cdr6_df$time),"%m")
+spei_cdr6_df$time=NULL
+
+august_spei <- filter(spei_cdr6_df, month == "08")
+
+cdr_full3 <- cdr_full %>%
+  group_by(year) %>%
+  summarize(MAP_mm = sum(25.4*Precip.inches.),
+            max_temp_c = mean((MaxTemp.degF. - 32)*(5/9)))
+
+cdr_all <- left_join(cdr_full3, august_spei, by = "year")  
+cdr_all <- na.omit(cdr_all)
+
+cdr_clean_no_na <- na.omit(cdr_clean)
+cdr_clean_no_na$year <- as.numeric(cdr_clean_no_na$year)
+cdr_anpp_control <- cdr_clean_no_na %>%
+  group_by(year, site, plot, nadd, ncess, uniqueID) %>%
+  summarize(NPP = sum(abundance)) %>%
+  filter(nadd == 0)
+
+cdr_all$year <- as.numeric(cdr_all$year)
+cdr_all_tog <- left_join(cdr_all, cdr_anpp_control, by = "year")
+
+cdr_all_tog <- na.omit(cdr_all_tog)
+names(cdr_all_tog)
+
+cdr_standardized <- cdr_all_tog %>%
+  mutate(MAP_stand = scale(MAP_mm),
+         temp_stand = scale(max_temp_c))
+
+mod_tp <- lme(NPP ~ MAP_stand + temp_stand, random = ~1|uniqueID, data = cdr_standardized)
+mod_spei <- lme(NPP ~ SPEI_6m, random = ~1|uniqueID, data = cdr_standardized)
+
+summary(mod_tp)
+summary(mod_spei)
+library(vegan)
+
+sumstats <- cdr_all_tog %>%
+  summarize(mean_max_temp = mean(max_temp_c),
+            range_max_temp = range(max_temp_c),
+            mean_precip = mean(MAP_mm),
+            range_precip = range(MAP_mm),
+            mean_spei= mean(SPEI_6m),
+            range_spei = range(SPEI_6m))
+
