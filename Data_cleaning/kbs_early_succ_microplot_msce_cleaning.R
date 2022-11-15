@@ -6,9 +6,11 @@ library(tidyverse)
 library(googledrive)
 
 #Create directory for file download 
+# I put this directory in to the .gitignore so it does not affect the repository when changes are pushed
 dir.create("raw_data_GDrive", showWarnings = F)
 
 #Create a tibble with all of the files in the LTER transitions directory
+#Don't need to change this since this is where all of the raw files are located
 files_ls=drive_ls(as_id("https://drive.google.com/drive/folders/1I_RFbh_YkkYHapP7H0J3gXXkUf6-nmqL"))
 
 #Download the dataset based on the file name in the directory
@@ -19,22 +21,21 @@ drive_download(file = subset(files_ls,name=="KBS_early_successional_microplot_sp
 #load data from the directory
 
 KBS_split_spp=read.table("raw_data_GDrive/KBS_early_successional_microplot_split_spp_2019.csv", sep=",",header = T)
-head(KBS_split_spp)
+
 
 
 ## Working data frame
 KBS_spp <- KBS_split_spp
 
-dim(KBS_spp)
 
-## For the date is formated as sampling date rather than year
+
+## For the date is formatted as sampling date rather than year
 ## Extract the year from the character string
 
 KBS_spp$Year <- format(as.Date(KBS_spp$sample_date),format = "%Y")
 
 KBS_spp$month <- format(as.Date(KBS_spp$sample_date),format = "%m")
-summary(as.numeric(KBS_spp$Year))
-unique(as.numeric(KBS_spp$month))
+
 
 ### Add ExpYear
 df <- data.frame(Year= 1989:2014,
@@ -86,7 +87,7 @@ KBS_spp_clean <- KBS_spp %>%
                 species, abundance, unitAbund, scaleAbund) 
 
 ## Check treatment
-unique(KBS_spp_clean$nadd)
+
 
 
 rm(KBS_spp)
