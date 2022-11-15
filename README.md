@@ -43,3 +43,9 @@ Library(tidyverse)
 
 
 ```
+##Links to project-specific repos
+CSF project: https://github.com/WildEcology/Transitions_CSF
+
+## Supplementary Resources
+
+NCEAS Scientific Computing Support Team page [link](https://nceas.github.io/scicomp.github.io)
