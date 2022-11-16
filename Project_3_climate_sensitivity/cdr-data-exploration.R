@@ -549,10 +549,11 @@ names(cdr_all_tog)
 
 cdr_standardized <- cdr_all_tog %>%
   mutate(MAP_stand = scale(MAP_mm),
-         temp_stand = scale(max_temp_c))
+         temp_stand = scale(max_temp_c),
+         NPP_stand = scale(NPP))
 
-mod_tp <- lme(NPP ~ MAP_stand + temp_stand, random = ~1|uniqueID, data = cdr_standardized)
-mod_spei <- lme(NPP ~ SPEI_6m, random = ~1|uniqueID, data = cdr_standardized)
+mod_tp <- lme(NPP_stand ~ MAP_stand + temp_stand, random = ~1|uniqueID, data = cdr_standardized)
+mod_spei <- lme(NPP_stand ~ SPEI_6m, random = ~1|uniqueID, data = cdr_standardized)
 
 summary(mod_tp)
 summary(mod_spei)
@@ -565,4 +566,9 @@ sumstats <- cdr_all_tog %>%
             range_precip = range(MAP_mm),
             mean_spei= mean(SPEI_6m),
             range_spei = range(SPEI_6m))
+
+ggplot(cdr_standardized, aes(x = SPEI_6m, y = NPP)) +
+  geom_point() + 
+  geom_smooth(method = "lm", se = T) +
+  theme_bw()
 
