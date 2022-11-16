@@ -6,7 +6,7 @@ source("utilities/data_import.R")
 
 ## Data import
 jrn_pvar <- read_csv_gdrive("16vTCcumUlMqvpUjyzhJOl9bg7NK0DrKv")%>%
-  tbl_df()
+  tibble::as_tibble()
 
 ## Working data frame
 jrnpvar <- jrn_pvar
