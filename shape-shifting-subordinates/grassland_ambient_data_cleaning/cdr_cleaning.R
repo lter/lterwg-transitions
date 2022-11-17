@@ -3,7 +3,7 @@
 
 ## Data manipulation packages
 library(tidyverse)
-source("utilities/data_import.R")
+#source("utilities/data_import.R")
 
 #READ IN DATA FROM EDI
 
@@ -15,27 +15,28 @@ source("utilities/data_import.R")
 # Contact:  Dan Bahauddin - Information Manager Cedar Creek Ecosystem Science Reserve  - webmaster@cedarcreek.umn.edu
 # Stylesheet v2.7 for metadata conversion into program: John H. Porter, Univ. Virginia, jporter@virginia.edu 
 
-inUrl1  <- "https://pasta.lternet.edu/package/data/eml/knb-lter-cdr/14/6/057e39850bd748d364df8a5ef60bb08d" 
-infile1 <- tempfile()
-download.file(inUrl1,infile1,method="curl")
+#inUrl1  <- "https://pasta.lternet.edu/package/data/eml/knb-lter-cdr/14/6/057e39850bd748d364df8a5ef60bb08d" 
+#infile1 <- tempfile()
+#download.file(inUrl1,infile1,method="curl")
 
                    
-cdr1 <-read.csv(infile1,header=F 
-          ,skip=1
-            ,sep="\t"  
-        , col.names=c(
-                    "Exp",     
-                    "Year",     
-                    "Field",     
-                    "Plot",     
-                    "NTrt",     
-                    "NAdd",     
-                    "NitrAdd",     
-                    "NAtm.plus.NAdd",     
-                    "Species",     
-                    "Biomass"    ), check.names=TRUE, stringsAsFactors = F)
-rm(list = c("inUrl1", "infile1"))
-names(cdr1) <- c("Exp", "Year", "Field", "Plot", "NTrt","NAdd", "NitrAdd", "NAtm.NAdd", "Species", "Biomass")                                  
+#cdr1 <-read.csv(infile1,header=F 
+ #         ,skip=1
+  #          ,sep="\t"  
+   #     , col.names=c(
+    #                "Exp",     
+     #               "Year",     
+      #              "Field",     
+       #             "Plot",     
+        #            "NTrt",     
+         #           "NAdd",     
+          #          "NitrAdd",     
+           #         "NAtm.plus.NAdd",     
+            #        "Species",     
+             #       "Biomass"    ), check.names=TRUE, stringsAsFactors = F)
+#rm(list = c("inUrl1", "infile1"))
+#names(cdr1) <- c("Exp", "Year", "Field", "Plot", "NTrt","NAdd", "NitrAdd", "NAtm.NAdd", "Species", "Biomass")                                  
+
 #Read in e002:
 # Package ID: knb-lter-cdr.18.6 Cataloging System:https://pasta.edirepository.org.
 # Data set title: Plant aboveground biomass data: Long-Term Nitrogen Deposition During Grassland Succession.
@@ -44,38 +45,46 @@ names(cdr1) <- c("Exp", "Year", "Field", "Plot", "NTrt","NAdd", "NitrAdd", "NAtm
 # Contact:  Dan Bahauddin - Information Manager Cedar Creek Ecosystem Science Reserve  - webmaster@cedarcreek.umn.edu
 # Stylesheet v2.7 for metadata conversion into program: John H. Porter, Univ. Virginia, jporter@virginia.edu 
 
-inUrl1  <- "https://pasta.lternet.edu/package/data/eml/knb-lter-cdr/18/6/b164ab6b1dc782e0c33714fc2f6522db" 
-infile1 <- tempfile()
-download.file(inUrl1,infile1,method="curl")
+#inUrl1  <- "https://pasta.lternet.edu/package/data/eml/knb-lter-cdr/18/6/b164ab6b1dc782e0c33714fc2f6522db" 
+#infile1 <- tempfile()
+#download.file(inUrl1,infile1,method="curl")
 
                    
-cdr2 <-read.csv(infile1,header=F 
-          ,skip=1
-            ,sep="\t"  
-        , col.names=c(
-                    "Sampling.date.paren.mm.per.dd.per.yyyy.paren.",     
-                    "Field",     
-                    "Experiment.number",     
-                    "plot.number",     
-                    "Ntrt",     
-                    "NAdd.paren.g.per.m2.per.yr.paren.",     
-                    "BurnTrt",     
-                    "Species.Name",     
-                    "Species.Biomass..paren.g.per.m2.paren.",     
-                    "Maximum.plant.height..paren.cm.paren.",     
-                    "Median.plant.height..paren.cm.paren."    ), check.names=TRUE, stringsAsFactors = F)              
-rm(list = c("inUrl1", "infile1"))
-cdr2 <- cdr2[,1:9] #select solumns of interest
-names(cdr2) <- c("Date", "Field", "Exp", "Plot", "Ntrt", "Nadd", "BurnTrt", "Species", "Biomass")
+#cdr2 <-read.csv(infile1,header=F 
+ #         ,skip=1
+  #          ,sep="\t"  
+   #     , col.names=c(
+    #                "Sampling.date.paren.mm.per.dd.per.yyyy.paren.",     
+     #               "Field",     
+      #              "Experiment.number",     
+       #             "plot.number",     
+        #            "Ntrt",     
+         #           "NAdd.paren.g.per.m2.per.yr.paren.",     
+          #          "BurnTrt",     
+           #         "Species.Name",     
+            #        "Species.Biomass..paren.g.per.m2.paren.",     
+             #       "Maximum.plant.height..paren.cm.paren.",     
+              #      "Median.plant.height..paren.cm.paren."    ), check.names=TRUE, stringsAsFactors = F)              
+#rm(list = c("inUrl1", "infile1"))
+#cdr2 <- cdr2[,1:9] #select solumns of interest
+#names(cdr2) <- c("Date", "Field", "Exp", "Plot", "Ntrt", "Nadd", "BurnTrt", "Species", "Biomass")
                
 ###Alternately, read in from Google Drive
 ## I deleted meta data from csv files provided
+
 ## Read in e001
-#cdr1 <- read_csv_gdrive("0B0uEFIRDqNiaNjU3a0RtTWVDenc") %>%
-#  tbl_df()
+## download e001
+#drive_download(file = "https://drive.google.com/file/d/1kuSyZIYBBmxMvenMHzmzNJeCpunFSP0v/view?usp=share_link")
+
+cdr1 <- read.csv("cdr_e001.csv") %>%
+  tbl_df()
+
 ## Read in e002
-#cdr2 <- read_csv_gdrive("0B0uEFIRDqNiaYUNrWlprSTNWVGc") %>%
-#  tbl_df()
+## download e002
+drive_download(file = "https://drive.google.com/file/d/1nuRjSbE90ldZd0HyT-yM2LVvRkjxqDY4/view?usp=share_link")
+
+cdr2 <- read.csv("cdr_e002.csv") %>%
+  tbl_df()
 
 
 ## Clean up data e001
@@ -268,6 +277,9 @@ cdr_clean <- subset(cdr_clean, cdr_clean$project == "1") %>%
 
 rm(cdr_c_1,
    cdr_c_2)
+
+# Q HERE ####
+  ## what are the data from the USDA
 
 ## Read in the data from USDA
 usda_spp <- read_csv_gdrive("0BwguSiR80XFZd08xLTIxbC1KSEU") %>%

@@ -29,7 +29,8 @@ ggplot(cats_grouped[cats_grouped$field == "EDGE_black",], aes(x=year, y=mean_abu
   facet_wrap(~rainfall) +
   ggtitle("EDGE Black Field") +
   geom_vline(xintercept = 2017, linetype = "dashed") +
-  xlab("Year") + ylab("Mean Abundance per Category (g)")
+  xlab("Year") + ylab("Mean Abundance of Category (g)")
+#ggsave("shape-shifting-subordinates/preliminary_figs/black_cats_temporal.png", width = 5, height = 3)
 
 ggplot(cats_grouped[cats_grouped$field == "EDGE_blue",], aes(x=year, y=mean_abund, color = nickname)) +
   geom_line(size = 0.8) +
@@ -37,6 +38,9 @@ ggplot(cats_grouped[cats_grouped$field == "EDGE_blue",], aes(x=year, y=mean_abun
   ggtitle("EDGE Blue Field") +
   geom_vline(xintercept = 2017, linetype = "dashed") +
   xlab("Year") + ylab("Mean Abundance per Category (g)")
+#ggsave("shape-shifting-subordinates/preliminary_figs/blue_cats_temporal.png", width = 5, height = 3)
+
+
 
 ## By SPEI ####
 ggplot(cats_grouped[!is.na(cats_grouped$nickname),], aes(x=SPEI.comp, y=mean_abund, color = rainfall)) +
@@ -88,6 +92,19 @@ ggplot(recovery, aes(x=nickname, y=mean_abund, fill = treatment_year)) +
   scale_fill_manual(values = c("#70a494","#ca562c","#f6edbd")) +
   xlab(" ")
 
+
+ggplot(recovery[recovery$field == "EDGE_black",], aes(x=treatment_year, y=mean_abund, fill = nickname)) +
+  geom_point(size = 3, pch = 21) +
+  facet_wrap(~nickname) +
+  ggtitle("EDGE Black Field") + xlab(" ")
+ggsave("shape-shifting-subordinates/preliminary_figs/recov_blk.png", width = 6.5, height = 4)
+
+ggplot(recovery[recovery$field == "EDGE_blue",], aes(x=treatment_year, y=mean_abund, fill = nickname)) +
+  geom_point(size = 3, pch = 21) +
+  facet_wrap(~nickname) +
+  ggtitle("EDGE Blue Field") +
+  xlab(" ")
+ggsave("shape-shifting-subordinates/preliminary_figs/recov_blu.png", width = 6.5, height = 4)
 
 ## separate out subordinate species
 sub_recovery <- recovery %>%

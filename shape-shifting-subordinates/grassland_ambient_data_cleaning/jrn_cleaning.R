@@ -6,14 +6,20 @@ library(tidyverse)
 ## only read this in if using USDA for spp cleaning
 # Source USDA species cleaning code
 # source("Data_cleaning/sppcodes_cleaning.R")
-source("utilities/data_import.R")
+#source("utilities/data_import.R")
 
 ## Read in the data
 ## Using data requested by Shaopeng in 2014; appears to be most up-to-date
 ## Removed metadata from the top of file for easier import
-jrn <- read_csv_gdrive("0BwguSiR80XFZWlBFdnFyWV9Jbzg") %>%
-  tbl_df()
+#jrn <- read_csv_gdrive("0BwguSiR80XFZWlBFdnFyWV9Jbzg") %>%
+ # tbl_df()
 
+## download data from google drive
+#drive_download(file = "https://drive.google.com/file/d/1oF0qiBUJEDzTRi5g7plpHehJFudP7IuI/view?usp=share_link")
+
+#jrn <- read.csv("JornadaStudy_011_npp_quad_data.csv")
+jrn2 <- read.csv("shape-shifting-subordinates/grassland_ambient_data/nppqdbio.csv", skip = 42)
+    ##42 was the magic number that got the colnames to align correctly.
 
 ## Read in the coordiantes for spatially explicit analyses
 ## LMH derived these from the raw dataset
@@ -23,7 +29,15 @@ jrn <- read_csv_gdrive("0BwguSiR80XFZWlBFdnFyWV9Jbzg") %>%
 # site SMAL is missing a point 
 # site WEST is missing two rows 
 # and another might be missing a point? 
-jrn_coordinates <- read_csv_gdrive("0BwguSiR80XFZclZPdUJPQmFxNHc") %>%
+
+## download the JornadaStudy_011_npp_quad_data...
+#drive_download(file = "https://drive.google.com/file/d/1y-lBRkgO6i_xy1c12C_KC6qDBUxvw0O4/view?usp=share_link")
+
+## download the jornada nppqdbio.csv file
+#drive_download(file = "https://drive.google.com/file/d/14oiqlU7x2dyY97c1udVlwpPhGI423imN/view?usp=share_link")
+
+
+jrn_coordinates <- read.csv("shape-shifting-subordinates/grassland_ambient_data/JRN_plotcoordinates.csv") %>%
   tbl_df() %>%
   mutate(habitat = zone,
          project = site,
@@ -43,7 +57,7 @@ jrn_coordinates <- read_csv_gdrive("0BwguSiR80XFZclZPdUJPQmFxNHc") %>%
 #   unique()
 
 # Clean the dataset
-jrn_clean <- jrn %>%
+jrn_clean <- jrn2 %>%
   # make year a decimal by season 
   # mutate(year = ifelse(season == "W", year + .2, year),
   #        year = ifelse(season == "S", year + .4, year),
@@ -139,5 +153,5 @@ jrn_func <- jrn_unkn_rm %>%
   # arrange(subplot,year,growth)
 
 # Remove unneeded files
-rm(jrn, jrn_clean, jrn_unknowns, jrn_unkn_rm)
+rm(jrn2, jrn_clean, jrn_unknowns, jrn_unkn_rm)
   
