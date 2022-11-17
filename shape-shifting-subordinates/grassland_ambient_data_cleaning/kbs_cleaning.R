@@ -35,8 +35,17 @@ source("Data_cleaning/sppcodes_cleaning.R")
 ## Read in the data cached on Google Drive 
 ## NOTE: KBS puts meta data at the top of their files
 ## LMH deleted this to make it easier to import (154-early+successional+microplot+biomass+by+species.csv)
-kbs <- read_csv_gdrive("0BwguSiR80XFZdnh2M216RS1sazA") %>%
-  tbl_df()
+# kbs <- read_csv_gdrive("0BwguSiR80XFZdnh2M216RS1sazA") %>%
+#   tbl_df()
+
+library(googledrive)
+Kbs_Folder<-"https://drive.google.com/drive/folders/1jx6T3nVap8oa9FUlQkFEE7WP-B5uHMy0"
+Kbs_File<-googledrive::drive_ls(path = as_id(Kbs_Folder), type = "csv", pattern = "154-early")
+Kbs_Id<-Kbs_File$id
+googledrive::drive_download(file = as_id(Kbs_Id), 
+                            overwrite = T)
+
+kbs<-read.csv("154-early+successional+microplot+biomass+by+species.csv")
 unique(kbs$treatment)
 unique(kbs$sample_date)
 
@@ -102,6 +111,7 @@ kbs_spp1 <- kbs_clean %>%
   separate(species2, c("genusName", "speciesName"))
 
 # modify the usda_spp to link to kbs 
+# No Usda_spp file available ot link to 
 usda_spp_kbs <- usda_spp %>%
   mutate(species = Scientific.Name) %>%
   dplyr::select(-altSymbol, -acceptedSymbol, -symbol) %>%
