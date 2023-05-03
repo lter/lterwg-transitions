@@ -4,7 +4,6 @@
 library(tidyverse)
 library(SPEI)
 library(ggpp)
-source("utilities/data_import.R")
 library(nlme)
 library(emmeans)
 library(MuMIn)
@@ -37,8 +36,8 @@ spei_KBS6_df$time=NULL
 
 
 #https://lter.kbs.msu.edu/datatables/686
-kbs_mcse_e_succ= read.table(here::here("Project_3_climate_sensitivity","KBS_data","686-early+successional+microplot+anpp+1666857475.csv"),
-                            sep = ",", header = T)
+source("Data_cleaning/kbs_early_succ_microplot_msce_cleaning.R") # extra column is disturbance treatment
+
 head(kbs_mcse_e_succ)
 dim(kbs_mcse_e_succ)
 #757   8
