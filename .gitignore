@@ -50,4 +50,9 @@ raw_data_GDrive/
 Project_3_climate_sensitivity/JRN data/
 *.Rproj
 .DS_Store
-SPEI/
+
+
+
+#ignore csv
+*.csv
+
