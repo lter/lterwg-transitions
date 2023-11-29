@@ -18,7 +18,7 @@ library(here)
 library(ggh4x)
 
 #https://digital.csic.es/handle/10261/288226
-# Global_SPEI_nc_tidy <- tidync(here::here("SPEI","spei06.nc"))
+# Global_SPEI_nc_tidy <- tidync(here::here("SPEI","spei06.nc")) ## this file isn't on the google drive
 # print(Global_SPEI_nc_tidy)
 
 
