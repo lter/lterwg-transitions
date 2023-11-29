@@ -1,4 +1,4 @@
-setwd("~/Desktop/")
+setwd("~/Desktop/lter transitions/Transitions_CSF/raw_data_GDrive")
 cdr_climate <- read.csv("cdr_weather.csv")
 
 cdr_climate$newdate <- strptime(as.character(cdr_climate$Date), "%m/%d/%y")
@@ -21,7 +21,7 @@ names(cdr_climate_final)
 
 cdrclim <- cdr_climate_final[,c(1,4,7,10)]
 cdrtemp <- cdr_climate_final[,c(1,2,9,10)]
-
+library(tidyverse)
 #### precip data ####
 cdrclim$growing_season <- ifelse(cdrclim$julian_day >= 91 & cdrclim$julian_day <= 212, "growingseason", "notgrowingseason")
 cdrclim1 <- cdrclim %>%
@@ -567,6 +567,7 @@ sumstats <- cdr_all_tog %>%
             mean_spei= mean(SPEI_6m),
             range_spei = range(SPEI_6m))
 
+##visualizing
 ggplot(cdr_standardized, aes(x = SPEI_6m, y = NPP)) +
   geom_point() + 
   geom_smooth(method = "lm", se = T) +
