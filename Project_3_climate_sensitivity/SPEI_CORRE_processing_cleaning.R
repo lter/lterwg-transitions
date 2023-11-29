@@ -7,8 +7,9 @@
 #Beguería, S., Vicente-Serrano, S.M. y Angulo, M., (2010): A multi-scalar global drought data set: the SPEIbase: A new gridded product for the analysis of drought variability and impacts. Bulletin of the American Meteorological Society. 91, 1351-1354
 #Vicente-Serrano, S.M., Beguería, S., López-Moreno, J.I., Angulo, M., El Kenawy, A. (2010): A new global 0.5° gridded dataset (1901-2006) of a multiscalar drought index: comparison with current drought index datasets based on the Palmer Drought Severity Index. Journal of Hydrometeorology. 11: 1033-1043
 
-
-
+rm(list = ls())
+#install.packages("tidync", type = "binary")
+library(RNetCDF)
 #library(ncdf4)
 library(tidync)
 library(dplyr)
@@ -17,12 +18,12 @@ library(here)
 library(ggh4x)
 
 #https://digital.csic.es/handle/10261/288226
-Global_SPEI_nc_tidy <- tidync(here::here("SPEI","spei06.nc"))
-print(Global_SPEI_nc_tidy)
+# Global_SPEI_nc_tidy <- tidync(here::here("SPEI","spei06.nc"))
+# print(Global_SPEI_nc_tidy)
 
 
-#Global_SPEI_nc<-
- # nc_open(here::here("SPEI","spei06.nc"))
+Global_SPEI_nc<-
+ncdf4::nc_open(here::here("SPEI","spei06.nc"))
 
 
 CORRE_SPEI_raw<-
