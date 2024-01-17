@@ -36,34 +36,35 @@ comb_data <- full_join(corre_data, all_SPEI_raw, by = c("year", "site_code"))
 
 unique(comb_data$trt_type)
 comb_data1 <- comb_data %>%
-  filter(month == 10) %>% ##filtering to October for the 9 month SPEI calculations
+  #filter(month == 10) %>% ##filtering to October for the 9 month SPEI calculations
   filter(trt_type == "control" | trt_type == "N" | trt_type == "P" | trt_type == "N*P") %>%
   distinct()
-unique(comb_data1$site_code) ## we have six sites
+unique(comb_data1$site_code) 
 
-comb_data1 %>%
-  filter(trt_type == "N") %>%
-  ggplot(aes(x = spei, y = anpp)) +
-  geom_point() +
-  facet_wrap(~site_code, scales = "free_y") +
-  geom_smooth(method = "loess", se = F) +
-  theme_bw() 
 
-standardized_data <- comb_data1 %>%
-  ungroup() %>%
-  drop_na() %>%
-  group_by(site_code, trt_type, year, spei) %>%
-  summarize(z_score_anpp = mean(anpp)/sd(anpp))
+# comb_data1 %>%
+#   filter(trt_type == "N") %>%
+#   ggplot(aes(x = spei, y = anpp)) +
+#   geom_point() +
+#   facet_wrap(~site_code, scales = "free_y") +
+#   geom_smooth(method = "loess", se = F) +
+#   theme_bw() 
+# 
+# standardized_data <- comb_data1 %>%
+#   ungroup() %>%
+#   drop_na() %>%
+#   group_by(site_code, trt_type, year, spei, treatment) %>%
+#   summarize(z_score_anpp = mean(anpp)/sd(anpp))
+# 
+# standardized_data %>%
+#   filter(trt_type == "control") %>%
+#   ggplot(aes(x = spei, y = z_score_anpp, color = treatment)) +
+#   geom_point() +
+#   facet_grid(~site_code, scales = "free_y") +
+#   geom_smooth(method = "loess", se = F) +
+#   theme_bw() 
 
-standardized_data %>%
-  filter(trt_type == "control") %>%
-  ggplot(aes(x = spei, y = z_score_anpp)) +
-  geom_point() +
-  facet_grid(~site_code, scales = "free_y") +
-  geom_smooth(method = "loess", se = F) +
-  theme_bw() 
-
-comb_data1 <- comb_data1 %>%
+comb_data2 <- comb_data1 %>%
   unite(uniqueID, c("year", "treatment", "block", "plot_id"), remove = FALSE)
 
 #Model selection----------------
@@ -73,14 +74,26 @@ comb_data1 <- comb_data1 %>%
 #### figure out which sites have an anpp vs. spei relationship ####
 
 ## filter out sites that don't have an N treatment
-sites_with_n <- comb_data1 %>%
+unique(comb_data2$site_code)
+sites_with_n <- comb_data2 %>%
   filter(trt_type == "N") 
 keep_sites <- unique(sites_with_n$site_code)
-
+print(keep_sites)
+## Yarra is the southern hemisphere, so need a different range for SPEI
 
 ## data frame for looking at effects of N and SPEI
-n_sites <- comb_data1 %>%
+##ugly and long way of making sure the right months' spei goes with the right sites
+n_sites <- comb_data2 %>%
   filter(site_code %in% keep_sites)
+
+
+n_sites_april <- n_sites %>%
+  filter(site_code == "yarra.au") %>%
+  filter(month == 4)
+n_sites_october <- n_sites %>%
+  filter(site_code != 'yarra.au') %>%
+  filter(month == 10)
+n_sites <- bind_rows(n_sites_april, n_sites_october)
 
 ##blank for seeing which sites have SPEI in the model
 not_null_sites <- tibble(site_code = NA,
@@ -117,11 +130,18 @@ unique(spei_sites)
 
 ########
 ## sites where a model with SPEI, year, and N is the best fit == CDR, SERC, KUFS, yarra.au
-
-
+## for Yarra models later on --
+comb_data_south <- comb_data2 %>%
+  filter(month == 4) %>% 
+  filter(trt_type == "control" | trt_type == "N" | trt_type == "P" | trt_type == "N*P") %>%
+  distinct()
+comb_data_north <- comb_data2 %>%
+  filter(month == 10) %>% 
+  filter(trt_type == "control" | trt_type == "N" | trt_type == "P" | trt_type == "N*P") %>%
+  distinct()
 #### Yarra, Australia ####
 
-yarra <- filter(comb_data1, site_code == "yarra.au")
+yarra <- filter(comb_data_south, site_code == "yarra.au")
 m.null <- lme(anpp ~ year*n, data = yarra, random = ~1|uniqueID, method="ML")
 m.La <- lme(anpp ~ spei + n, data = yarra,random = ~1|uniqueID, method="ML")
 m.Li <- lme(anpp ~ spei*n, data = yarra,random = ~1|uniqueID, method="ML")
@@ -133,7 +153,7 @@ m.Ci <- lme(anpp ~ spei*n + I(spei^2)*n + I(spei^3)*n, data = yarra, random = ~1
 # model selection
 AICc(m.null, m.La, m.Li, m.Qa, m.Qi, m.Ca, m.Ci)
 min(AICc(m.null, m.La, m.Li, m.Qa, m.Qi, m.Ca, m.Ci)[,2])
-#Best model is m.Qa, but within 1 of m.Ca
+#Best model is m.Ca, but within 1 of m.Ci
 ## additive models are better fits than interactive models, generally
 
 # AR1 - autocorrelation 1, AR1 - autocorrelation 2 to best model from above
@@ -141,27 +161,27 @@ min(AICc(m.null, m.La, m.Li, m.Qa, m.Qi, m.Ca, m.Ci)[,2])
 # int.year <- exp.clim$expyear*2-1 #convert to integer
 # exp.clim$expyear <- int.year
 #Fit temporal autocorrelation models
-m.AR1 <- update(m.Qa,correlation = corAR1(form= ~treatment_year))
-m.AR2 <- update(m.Qa,correlation = corARMA(form= ~treatment_year,p=2))
+m.AR1 <- update(m.Ca,correlation = corAR1(form= ~treatment_year))
+m.AR2 <- update(m.Ca,correlation = corARMA(form= ~treatment_year,p=2))
 # model selection
-AICc(m.Qa, m.AR1, m.AR2)
-# best model m.Qa
-rsquared(m.Qa)
+AICc(m.Ca, m.AR1, m.AR2)
+# best model m.Ca
+rsquared(m.Ca)
 #Marginal R2:  the proportion of variance explained by the fixed factor(s) alone == 0.39
 #Conditional R2: he proportion of variance explained by both the fixed and random factors == 0.92
 
 #Evaluate model assumptions
-plot(m.Qa) #pretty linear but with a wide spread
-qqPlot(residuals(m.Qa)) ## some deviations at the high end of the range
-hist(residuals(m.Qa)) ## slightly right-skewed
+plot(m.Ca) #pretty linear but with a wide spread
+qqPlot(residuals(m.Ca)) ## some deviations at the high end of the range
+hist(residuals(m.Ca)) 
 
 #Do sketchy frequentist tests on best model
-anova(m.Qa,type = "marginal") #F test
-Anova(m.Qa,type = 2)# Chisq test. Differnet values for p-values, but same significance
+anova(m.Ca,type = "marginal") #F test
+Anova(m.Ca,type = 2)# Chisq test. Differnet values for p-values, but same significance
 
 #Param estimates and post-hoc pairwise comparisons
-emtrends(m.Qa,~ n | degree, "spei", max.degree = 3) ## error message
-pairs(emtrends(m.Qa,~ n | degree , "spei", max.degree = 3)) ## getting NaNs
+emtrends(m.Ca,~ n | degree, "spei", max.degree = 3) ## error message
+pairs(emtrends(m.Ca,~ n | degree , "spei", max.degree = 3)) ## getting NaNs
 #The quadratic slope is the most different
 
 #Visualize CSF results---
@@ -174,9 +194,9 @@ pairs(emtrends(m.Qa,~ n | degree , "spei", max.degree = 3)) ## getting NaNs
 #        y="ANPP")
 
 #Alternative visualization code if the above doesn't work
-yarra$predicted <- predict(m.Qa, yarra)
+yarra$predicted <- predict(m.Ca, yarra)
 yarra_plot <- ggplot(yarra, aes(x=spei, y = predicted)) +
-  facet_wrap(~n)+
+  facet_wrap(~treatment)+
   geom_point(aes(x = spei, y = anpp), color="gray60", size = 0.5) +
   geom_smooth(aes(y = predicted), color = "gray20") +
   theme_bw() +
@@ -185,7 +205,7 @@ yarra_plot <- ggplot(yarra, aes(x=spei, y = predicted)) +
        y="Aboveground NPP")
 
 ####  CEDAR CREEK, USA ####
-cdr <- comb_data1 %>%
+cdr <- comb_data_north %>%
   filter(site_code == "CDR") %>%
   group_by(site_code, uniqueID, block, plot_id, project_name.x, treatment, treatment_year, trt_type, year, n, p, k, spei) %>%
   summarize(anpp = mean(anpp))
@@ -244,7 +264,7 @@ pairs(emtrends(m.Ci,~ n | degree , "spei", max.degree = 3)) ## error message
 #Alternative visualization code if the above doesn't work
 cdr$predicted <- predict(m.Ci, cdr)
 cdr_plot <- ggplot(cdr, aes(x=spei, y = predicted)) +
-  facet_wrap(~n)+
+  facet_wrap(~treatment, scales = "free_y")+
   geom_point(aes(x = spei, y = anpp), color="gray60", size = 0.5) +
   geom_smooth(aes(y = predicted), color = "gray20") +
   theme_bw() +
@@ -253,8 +273,8 @@ cdr_plot <- ggplot(cdr, aes(x=spei, y = predicted)) +
        y="Aboveground NPP")
 
 
-#### KUFS ####
-kufs <- filter(comb_data1, site_code == "KUFS")
+#### Kansas univ. field station ####
+kufs <- filter(comb_data_north, site_code == "KUFS")
 m.null <- lme(anpp ~ year*n, data = kufs, random = ~1|uniqueID, method="ML")
 m.La <- lme(anpp ~ spei + n, data = kufs,random = ~1|uniqueID, method="ML")
 m.Li <- lme(anpp ~ spei*n, data = kufs,random = ~1|uniqueID, method="ML")
@@ -309,7 +329,7 @@ pairs(emtrends(m.Ca,~ n | degree , "spei", max.degree = 3)) ## getting NaNs
 #Alternative visualization code if the above doesn't work
 kufs$predicted <- predict(m.Ca, kufs)
 kufs_plot <- ggplot(kufs, aes(x=spei, y = predicted)) +
-  facet_wrap(~n)+
+  facet_wrap(~treatment, scales = "free_y")+
   geom_point(aes(x = spei, y = anpp), color="gray60", size = 0.5) +
   geom_smooth(aes(y = predicted), color = "gray20") +
   theme_bw() +
@@ -318,7 +338,7 @@ kufs_plot <- ggplot(kufs, aes(x=spei, y = predicted)) +
        y="Aboveground NPP")
 
 #### SERC ####
-serc <- comb_data1 %>%
+serc <- comb_data_north %>%
   filter(site_code == "SERC") %>%
   group_by(site_code, uniqueID, block, plot_id, project_name.x, treatment, treatment_year, trt_type, year, n, p, k, spei) %>%
   summarize(anpp = mean(anpp))
@@ -355,15 +375,15 @@ rsquared(m.Ci)
 #Evaluate model assumptions
 plot(m.Ci) #clumpy but linear but with a wide spread
 qqPlot(residuals(m.Ci)) ## some deviations at the high end of the range
-hist(residuals(m.Ci)) ## slightly right-skewed
+hist(residuals(m.Ci)) ## pretty symmetrical
 
 #Do sketchy frequentist tests on best model
-anova(m.Ci,type = "marginal") #F test -- spei for 2 and 3 sig, n
+anova(m.Ci,type = "marginal") #F test -- sig everything except spei^2
 Anova(m.Ci,type = 2)# Chisq test. Differnet values for p-values, but same signifiCince
 
 #Param estimates and post-hoc pairwise comparisons
 emtrends(m.Ci,~ n | degree, "spei", max.degree = 3) 
-pairs(emtrends(m.Ci,~ n | degree , "spei", max.degree = 3)) ## getting NaNs
+pairs(emtrends(m.Ci,~ n | degree , "spei", max.degree = 3))
 #The quadratic slope is the most different
 
 #Visualize CSF results---
@@ -378,7 +398,7 @@ pairs(emtrends(m.Ci,~ n | degree , "spei", max.degree = 3)) ## getting NaNs
 #Alternative visualization code if the above doesn't work
 serc$predicted <- predict(m.Ci, serc)
 serc_plot <- ggplot(serc, aes(x=spei, y = predicted)) +
-  facet_wrap(~n)+
+  facet_wrap(~treatment)+
   geom_point(aes(x = spei, y = anpp), color="gray60", size = 0.5) +
   geom_smooth(aes(y = predicted), color = "gray20") +
   theme_bw() +
@@ -386,3 +406,9 @@ serc_plot <- ggplot(serc, aes(x=spei, y = predicted)) +
   labs(x="SPEI",
        y="Aboveground NPP")
 
+
+#### All plots ####
+yarra_plot
+cdr_plot
+kufs_plot
+serc_plot
