@@ -75,17 +75,33 @@ comb_data2 <- comb_data1 %>%
 
 ## filter out sites that don't have an N treatment
 unique(comb_data2$site_code)
+
+
+## assess whether each project in each site has both a control and N
+control_n <- comb_data2 %>%
+  group_by(site_code) %>%
+  unite(experiment_id, c("project_name.x", "trt_type")) %>%
+  dplyr::select(site_code, experiment_id) %>%
+  distinct() %>%
+  arrange(site_code)
+## experiments without a control and N
+dont_include <- c("watering", "e001", "e002", "PHACE", "Yu", "IRG", "TMECE", "Nfert")
+'%!in%' <- function(x,y)!('%in%'(x,y))
+
 sites_with_n <- comb_data2 %>%
-  filter(trt_type == "N") 
+  filter(trt_type == "N") %>%
+  filter(project_name.x %!in% dont_include) %>% ## see above
+  filter(site_code != "temple.us") ## temple only has a control treatment
 keep_sites <- unique(sites_with_n$site_code)
-print(keep_sites)
+print(keep_sites) ## 9 total sites
+
+
 ## Yarra is the southern hemisphere, so need a different range for SPEI
 
 ## data frame for looking at effects of N and SPEI
 ##ugly and long way of making sure the right months' spei goes with the right sites
 n_sites <- comb_data2 %>%
   filter(site_code %in% keep_sites)
-
 
 n_sites_april <- n_sites %>%
   filter(site_code == "yarra.au") %>%
@@ -125,7 +141,9 @@ for (i in unique(n_sites$site_code)) {
 
 spei_sites <- not_null_sites %>%
   filter(keep == "yes")
-unique(spei_sites)
+print(spei_sites)
+## being more precise with which treatments we're keeping does not change which sites
+## have SPEI in the best fit model
 
 
 ########
@@ -139,9 +157,11 @@ comb_data_north <- comb_data2 %>%
   filter(month == 10) %>% 
   filter(trt_type == "control" | trt_type == "N" | trt_type == "P" | trt_type == "N*P") %>%
   distinct()
+
 #### Yarra, Australia ####
 
 yarra <- filter(comb_data_south, site_code == "yarra.au")
+
 m.null <- lme(anpp ~ year*n, data = yarra, random = ~1|uniqueID, method="ML")
 m.La <- lme(anpp ~ spei + n, data = yarra,random = ~1|uniqueID, method="ML")
 m.Li <- lme(anpp ~ spei*n, data = yarra,random = ~1|uniqueID, method="ML")
@@ -195,10 +215,10 @@ pairs(emtrends(m.Ca,~ n | degree , "spei", max.degree = 3)) ## getting NaNs
 
 #Alternative visualization code if the above doesn't work
 yarra$predicted <- predict(m.Ca, yarra)
-yarra_plot <- ggplot(yarra, aes(x=spei, y = predicted)) +
-  facet_wrap(~treatment)+
-  geom_point(aes(x = spei, y = anpp), color="gray60", size = 0.5) +
-  geom_smooth(aes(y = predicted), color = "gray20") +
+yarra_plot <- ggplot(yarra, aes(x=spei, y = predicted, color = treatment)) +
+ # facet_wrap(~treatment)+
+  geom_point(aes(x = spei, y = anpp),  size = 0.5) +
+  geom_smooth(aes(y = predicted, fill = treatment), se = F) +
   theme_bw() +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + 
   labs(x="SPEI",
@@ -209,7 +229,8 @@ cdr <- comb_data_north %>%
   filter(site_code == "CDR") %>%
   group_by(site_code, uniqueID, block, plot_id, project_name.x, treatment, treatment_year, trt_type, year, n, p, k, spei) %>%
   summarize(anpp = mean(anpp))
-
+##currently, we only have actual N addition data from Cedar Creek in NutNet and BioCON; the 
+## e001 and e002 data are just control
 
 m.null <- lme(anpp ~ year*n, data = cdr, random = ~1|uniqueID, method="ML")
 m.La <- lme(anpp ~ spei + n, data = cdr,random = ~1|uniqueID, method="ML")
@@ -275,6 +296,14 @@ cdr_plot <- ggplot(cdr, aes(x=spei, y = predicted)) +
 
 #### Kansas univ. field station ####
 kufs <- filter(comb_data_north, site_code == "KUFS")
+
+kufs %>%
+  unite(experiment_id, c("project_name.x", "trt_type")) %>%
+  dplyr::select(experiment_id) %>%
+  distinct()
+## projects = E2 and E6
+## E2 is control and N, E6 is control, N, P, NP
+
 m.null <- lme(anpp ~ year*n, data = kufs, random = ~1|uniqueID, method="ML")
 m.La <- lme(anpp ~ spei + n, data = kufs,random = ~1|uniqueID, method="ML")
 m.Li <- lme(anpp ~ spei*n, data = kufs,random = ~1|uniqueID, method="ML")
@@ -341,8 +370,16 @@ kufs_plot <- ggplot(kufs, aes(x=spei, y = predicted)) +
 serc <- comb_data_north %>%
   filter(site_code == "SERC") %>%
   group_by(site_code, uniqueID, block, plot_id, project_name.x, treatment, treatment_year, trt_type, year, n, p, k, spei) %>%
-  summarize(anpp = mean(anpp))
+  summarize(anpp = mean(anpp)) %>%
+  ungroup() 
 
+serc %>%
+  unite(experiment_id, c("project_name.x", "trt_type")) %>%
+  dplyr::select(experiment_id) %>%
+  distinct()
+
+## two experiments = TMCE and CXN
+## CXN has control and N, TMCE only has control
 
 
 m.null <- lme(anpp ~ year*n, data = serc, random = ~1|uniqueID, method="ML")
@@ -412,3 +449,68 @@ yarra_plot
 cdr_plot
 kufs_plot
 serc_plot
+
+## looking at all sites even if null is the best model
+konza <- filter(comb_data_south, site_code == "KNZ")
+m.null <- lme(anpp ~ year*n, data = konza, random = ~1|uniqueID, method="ML")
+m.La <- lme(anpp ~ spei + n, data = konza,random = ~1|uniqueID, method="ML")
+m.Li <- lme(anpp ~ spei*n, data = konza,random = ~1|uniqueID, method="ML")
+m.Qa <- lme(anpp ~ spei+n + I(spei^2), data = konza, random = ~1|uniqueID, method="ML")
+m.Qi <- lme(anpp ~ spei*n + I(spei^2)*n, data = konza,random=~1|uniqueID,method="ML")
+m.Ca <- lme(anpp ~ spei+n + I(spei^2) + I(spei^3),data = konza,random=~1|uniqueID,method="ML")
+m.Ci <- lme(anpp ~ spei*n + I(spei^2)*n + I(spei^3)*n, data = konza, random = ~1|uniqueID, method="ML")
+
+# model selection
+AICc(m.null, m.La, m.Li, m.Qa, m.Qi, m.Ca, m.Ci)
+min(AICc(m.null, m.La, m.Li, m.Qa, m.Qi, m.Ca, m.Ci)[,2])
+#Best model is m.Ca, but within 1 of m.Ci
+## additive models are better fits than interactive models, generally
+
+# AR1 - autocorrelation 1, AR1 - autocorrelation 2 to best model from above
+#This is only necessary if expyear includes non-integer numbers
+# int.year <- exp.clim$expyear*2-1 #convert to integer
+# exp.clim$expyear <- int.year
+#Fit temporal autocorrelation models
+m.AR1 <- update(m.Ca,correlation = corAR1(form= ~treatment_year))
+m.AR2 <- update(m.Ca,correlation = corARMA(form= ~treatment_year,p=2))
+# model selection
+AICc(m.Ca, m.AR1, m.AR2)
+# best model m.Ca
+rsquared(m.Ca)
+#Marginal R2:  the proportion of variance explained by the fixed factor(s) alone == 0.39
+#Conditional R2: he proportion of variance explained by both the fixed and random factors == 0.92
+
+#Evaluate model assumptions
+plot(m.Ca) #pretty linear but with a wide spread
+qqPlot(residuals(m.Ca)) ## some deviations at the high end of the range
+hist(residuals(m.Ca)) 
+
+#Do sketchy frequentist tests on best model
+anova(m.Ca,type = "marginal") #F test
+Anova(m.Ca,type = 2)# Chisq test. Differnet values for p-values, but same significance
+
+#Param estimates and post-hoc pairwise comparisons
+emtrends(m.Ca,~ n | degree, "spei", max.degree = 3) ## error message
+pairs(emtrends(m.Ca,~ n | degree , "spei", max.degree = 3)) ## getting NaNs
+#The quadratic slope is the most different
+
+#Visualize CSF results---
+# get a plot of estimated values from the model, by each depth
+# visreg with ggplot graphics
+# visreg(fit = m.Qa, xvar = "spei", type = "conditional", by = "n", data = yarra, gg = TRUE, partial = F, rug = F) + 
+#   geom_point(aes(x = spei, y = anpp, col = treatment_year), alpha = 0.2, data = yarra) +
+#   theme_bw() +
+#   labs(x="SPEI",
+#        y="ANPP")
+
+#Alternative visualization code if the above doesn't work
+konza$predicted <- predict(m.null, konza)
+konza_plot <- ggplot(konza, aes(x=spei, y = predicted)) +
+  facet_wrap(~treatment, scales = "free_y")+
+  geom_point(aes(x = spei, y = anpp), color="gray60", size = 0.5) +
+  geom_smooth(aes(y = predicted), color = "gray20") +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + 
+  labs(x="SPEI",
+       y="Aboveground NPP")
+
