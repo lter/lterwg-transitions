@@ -212,7 +212,7 @@ pairs(emtrends(m.Ca,~ n | degree , "spei", max.degree = 3)) ## getting NaNs
 # get a plot of estimated values from the model, by each depth
 # visreg with ggplot graphics
 visreg(fit, xvar = "spei", type = "conditional", by = "treatment", data = yarra, gg = TRUE, partial = F, rug = F, overlay = TRUE, alpha = 1) +
-  geom_point(aes(x = spei, y = anpp), alpha = 0.2, data = yarra) +
+  geom_point(aes(x = spei, y = anpp, color = treatment), alpha = 0.2, data = yarra) +
   theme_bw() +
   labs(x="SPEI",
        y="ANPP")
@@ -292,7 +292,7 @@ pairs(emtrends(m.Ci,~ n | degree , "spei", max.degree = 3)) ## error message
 # visreg with ggplot graphics
 lm.Ci <- lm(anpp ~ spei*treatment + I(spei^2)*treatment + I(spei^3)*treatment, data = cdr) ## convert model to lm so that visreg will run
 visreg(lm.Ci, xvar = "spei", type = "conditional", by = "treatment", data = cdr, gg = TRUE, partial = F, rug = F, overlay = TRUE, alpha = 1) +
-  geom_point(aes(x = spei, y = anpp), alpha = 0.2, data = yarra) +
+  geom_point(aes(x = spei, y = anpp, color = treatment), alpha = 0.2, data = cdr) +
   theme_bw() +
   labs(x="SPEI",
        y="ANPP")
@@ -372,11 +372,13 @@ pairs(emtrends(m.Ca,~ n | degree , "spei", max.degree = 3)) ## getting NaNs
 # get a plot of estimated values from the model, by each depth
 # visreg with ggplot graphics
 lm.Ca <- lm(anpp ~ spei*n + I(spei^2) + I(spei^3), data = kufs)
+## can't figure out how to get the points to be the correct colors, and I also don't know why it's only
+## showing lines for E6
 visreg(lm.Ca, xvar = "spei", type = "conditional", by = "n", data = kufs, gg = TRUE, partial = F, rug = F, overlay = TRUE, alpha = 1) +
-  geom_point(aes(x = spei, y = anpp), alpha = 0.2, data = yarra) +
+  geom_point(aes(x = spei, y = anpp), alpha = 0.2, data = kufs) +
   theme_bw() +
   labs(x="SPEI",
-       y="ANPP")
+       y="ANPP") 
 
 #Alternative visualization code if the above doesn't work
 kufs$predicted <- predict(m.Ca, kufs)
