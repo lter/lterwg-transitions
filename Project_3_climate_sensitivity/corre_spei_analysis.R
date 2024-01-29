@@ -371,15 +371,19 @@ pairs(emtrends(m.Ca,~ n | degree , "spei", max.degree = 3)) ## getting NaNs
 #Visualize CSF results---
 # get a plot of estimated values from the model, by each depth
 # visreg with ggplot graphics
-lm.Ca <- lm(anpp ~ spei*n + I(spei^2) + I(spei^3), data = kufs)
+kufs$n_levels <- factor(kufs$n, levels = c("0", '4', "8", "15", "16"))
+kufs$p_levels <- factor(kufs$p, levels = c("0", '8'))
+lm.Ca <- lm(anpp ~ spei*n_levels + I(spei^2) + I(spei^3), data = kufs)
+
 ## can't figure out how to get the points to be the correct colors, and I also don't know why it's only
 ## showing lines for E6
-visreg(lm.Ca, xvar = "spei", type = "conditional", by = "n", data = kufs, gg = TRUE, partial = F, rug = F, overlay = TRUE, alpha = 1) +
-  geom_point(aes(x = spei, y = anpp), alpha = 0.2, data = kufs) +
+visreg(lm.Ca, xvar = "spei", type = "conditional", by = "n_levels", data = kufs, gg = TRUE, partial = F, rug = F, overlay = TRUE, alpha = 1) +
+  geom_point(aes(x = spei, y = anpp, color = n_levels), alpha = 0.2, data = kufs) +
+ # facet_wrap(~p_levels) +
   theme_bw() +
   labs(x="SPEI",
        y="ANPP") 
-
+unique(kufs$n)
 #Alternative visualization code if the above doesn't work
 kufs$predicted <- predict(m.Ca, kufs)
 
@@ -467,8 +471,8 @@ pairs(emtrends(m.Ca,~ n | degree , "spei", max.degree = 3))
 #Visualize CSF results---
 # get a plot of estimated values from the model, by each depth
 # visreg with ggplot graphics
-lm.Ca <- lm(anpp ~ spei*treatment + I(spei^2) + I(spei^3), data = serc)
-visreg(lm.Ca, xvar = "spei", type = "conditional", by = "treatment", data = serc, gg = TRUE, partial = F, rug = F, overlay = TRUE, alpha = 1) +
+lm.Ca <- lm(anpp ~ spei*trt_type + I(spei^2) + I(spei^3), data = serc)
+visreg(lm.Ca, xvar = "spei", type = "conditional", by = "trt_type", data = serc, gg = TRUE, partial = F, rug = F, overlay = TRUE, alpha = 1) +
   geom_point(aes(x = spei, y = anpp), alpha = 0.2, data = yarra) +
   theme_bw() +
   labs(x="SPEI",
