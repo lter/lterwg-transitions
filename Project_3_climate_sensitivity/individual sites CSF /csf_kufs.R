@@ -6,6 +6,7 @@ source("Project_3_climate_sensitivity/corre_spei_file_cleaning.R")
 kufs <- n_sites %>%
   filter(site_code == "KUFS")
 
+## make df for each experiment
 e2 <- kufs %>%
   filter(project_name == "E2")
 
