@@ -82,12 +82,19 @@ pairs(emtrends(m.AR2,~ nadd | degree , "SPEI.comp", max.degree = 3))
 #Visualize CSF results---------------------
 # get a plot of estimated values from the model, by each depth
 # visreg with ggplot graphics
-visreg(fit=m.AR2,"SPEI.comp",type="conditional",by="nadd",gg=TRUE,partial=F,rug=F)+ 
-  geom_point(aes(x=SPEI.comp,y=tot.cover,col=year),alpha=0.2,data=exp.clim)+
+lm.Ci<-lm(tot.cover~SPEI.comp*nadd+I(SPEI.comp^2)*nadd+I(SPEI.comp^3)*nadd,data=exp.clim)
+lm.Qi<-lm(tot.cover~SPEI.comp*nadd+I(SPEI.comp^2)*nadd,data=exp.clim)
+
+visreg(fit=lm.Ci,"SPEI.comp",type="conditional",by="nadd",gg = TRUE, partial = F, rug = F, overlay = TRUE, alpha = 1)+ 
+  geom_point(aes(x=SPEI.comp,y=tot.cover,col=nadd),alpha=0.2,data=exp.clim)+
   theme_bw()+
   labs(x="SPEI",
        y="Aboveground total cover")
-
+visreg(fit=lm.Qi,"SPEI.comp",type="conditional",by="nadd",gg = TRUE, partial = F, rug = F, overlay = TRUE, alpha = 1)+ 
+  geom_point(aes(x=SPEI.comp,y=tot.cover,col=nadd),alpha=0.2,data=exp.clim)+
+  theme_bw()+
+  labs(x="SPEI",
+       y="Aboveground total cover")
 #Alternative visualization code if the above doesn't work
 exp.clim$predicted<-predict(m.AR2, exp.clim)
 ggplot(exp.clim, aes(x=SPEI.comp, y=predicted)) +
