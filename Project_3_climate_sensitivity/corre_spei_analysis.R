@@ -21,8 +21,7 @@ all_SPEI_raw<-
   readRDS(here::here("SPEI","SPEI_all_trt_yr_total.rds")) ## both these files are in the GDrive in the Project 3 folder
 
 corre_data <- 
-  read.csv(here::here("Project_3_climate_sensitivity", "corre_all.csv"))
-
+  read.csv(here::here("SPEI", "corre_all.csv"))
 
 ## look at column names
 names(all_SPEI_raw)
