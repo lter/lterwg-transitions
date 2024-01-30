@@ -101,7 +101,8 @@ print(keep_sites) ## 9 total sites
 ## data frame for looking at effects of N and SPEI
 ##ugly and long way of making sure the right months' spei goes with the right sites
 n_sites <- comb_data2 %>%
-  filter(site_code %in% keep_sites)
+  filter(site_code %in% keep_sites) %>%
+  filter(project_name.x %!in% dont_include)
 
 n_sites_april <- n_sites %>%
   filter(site_code == "yarra.au") %>%
@@ -164,15 +165,13 @@ comb_data_north <- comb_data2 %>%
 
 yarra <- filter(comb_data_south, site_code == "yarra.au")
 
-m.null <- lme(anpp ~ year*n, data = yarra, random = ~1|uniqueID, method="ML")
-m.La <- lme(anpp ~ spei + n, data = yarra,random = ~1|uniqueID, method="ML")
-m.Li <- lme(anpp ~ spei*n, data = yarra,random = ~1|uniqueID, method="ML")
-m.Qa <- lme(anpp ~ spei+n + I(spei^2), data = yarra, random = ~1|uniqueID, method="ML")
-m.Qi <- lme(anpp ~ spei*n + I(spei^2)*n, data = yarra,random=~1|uniqueID,method="ML")
-m.Ca <- lme(anpp ~ spei+n + I(spei^2) + I(spei^3),data = yarra,random=~1|uniqueID, method="ML")
-m.Ci <- lme(anpp ~ spei*n + I(spei^2)*n + I(spei^3)*n, data = yarra, random = ~1|uniqueID, method="ML")
-
-summary(m.Ca)
+m.null <- lme(anpp ~ year*trt_type, data = yarra, random = ~1|uniqueID, method="ML")
+m.La <- lme(anpp ~ spei + trt_type, data = yarra,random = ~1|uniqueID, method="ML")
+m.Li <- lme(anpp ~ spei*trt_type, data = yarra,random = ~1|uniqueID, method="ML")
+m.Qa <- lme(anpp ~ spei+trt_type + I(spei^2), data = yarra, random = ~1|uniqueID, method="ML")
+m.Qi <- lme(anpp ~ spei*trt_type + I(spei^2)*trt_type, data = yarra,random=~1|uniqueID,method="ML")
+m.Ca <- lme(anpp ~ spei+trt_type + I(spei^2) + I(spei^3),data = yarra,random=~1|uniqueID, method="ML")
+m.Ci <- lme(anpp ~ spei*trt_type + I(spei^2)*trt_type + I(spei^3)*trt_type, data = yarra, random = ~1|uniqueID, method="ML")
 
 # model selection
 AICc(m.null, m.La, m.Li, m.Qa, m.Qi, m.Ca, m.Ci)
@@ -211,32 +210,27 @@ pairs(emtrends(m.Ca,~ n | degree , "spei", max.degree = 3)) ## getting NaNs
 # Visualize CSF results---
 # get a plot of estimated values from the model, by each depth
 # visreg with ggplot graphics
-visreg(fit, xvar = "spei", type = "conditional", by = "treatment", data = yarra, gg = TRUE, partial = F, rug = F, overlay = TRUE, alpha = 1) +
-  geom_point(aes(x = spei, y = anpp, color = treatment), alpha = 0.2, data = yarra) +
+fit <- lm(anpp ~ spei+trt_type + I(spei^2) + I(spei^3), data = yarra)
+
+visreg(fit, xvar = "spei", type = "conditional", by = "trt_type", data = yarra, gg = TRUE, partial = F, rug = F, overlay = TRUE, alpha = 1) +
+  geom_point(aes(x = spei, y = anpp, color = trt_type), alpha = 0.2, data = yarra) +
   theme_bw() +
   labs(x="SPEI",
        y="ANPP")
 
-visreg(fit = m.Ca, "spei", type = "contrast")
-fit <- lm(anpp ~ spei+treatment + I(spei^2) + I(spei^3),data = yarra)
-
-visreg(fit, "spei")
-AICc(fit)
-AICc(m.Ca)
-visreg(alt_m.Ca, "spei")
 #Alternative visualization code if the above doesn't work
-yarra$predicted <- predict(m.Ca, yarra)
-#yarra_plot <- 
-ggplot(yarra, aes(x=spei, y = predicted, color = treatment)) +
- # facet_wrap(~treatment)+
-  geom_point(aes(x = spei, y = anpp),  size = 0.5) +
-  geom_smooth(aes(y = predicted, fill = treatment), se = F) +
-  theme_bw() +
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + 
-  labs(x="SPEI",
-       y="Aboveground NPP") +
-  geom_hline(yintercept = 0, linetype = 3) +
-  geom_vline(xintercept = 0, linetype = 3)
+# yarra$predicted <- predict(m.Ca, yarra)
+# #yarra_plot <- 
+# ggplot(yarra, aes(x=spei, y = predicted, color = trt_type)) +
+#  # facet_wrap(~treatment)+
+#   geom_point(aes(x = spei, y = anpp),  size = 0.5) +
+#   geom_smooth(aes(y = predicted, fill = trt_type), se = F) +
+#   theme_bw() +
+#   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + 
+#   labs(x="SPEI",
+#        y="Aboveground NPP") +
+#   geom_hline(yintercept = 0, linetype = 3) +
+#   geom_vline(xintercept = 0, linetype = 3)
 
 ####  CEDAR CREEK, USA ####
 cdr <- comb_data_north %>%
@@ -246,56 +240,66 @@ cdr <- comb_data_north %>%
 ##currently, we only have actual N addition data from Cedar Creek in NutNet and BioCON; the 
 ## e001 and e002 data are just control
 
-m.null <- lme(anpp ~ year*n, data = cdr, random = ~1|uniqueID, method="ML")
-m.La <- lme(anpp ~ spei + n, data = cdr,random = ~1|uniqueID, method="ML")
-m.Li <- lme(anpp ~ spei*n, data = cdr,random = ~1|uniqueID, method="ML")
-m.Qa <- lme(anpp ~ spei+n + I(spei^2), data = cdr, random = ~1|uniqueID, method="ML")
-m.Qi <- lme(anpp ~ spei*n + I(spei^2)*n, data = cdr,random=~1|uniqueID,method="ML")
-m.Ca <- lme(anpp ~ spei+n + I(spei^2) + I(spei^3),data = cdr,random=~1|uniqueID,method="ML")
-m.Ci <- lme(anpp ~ spei*n + I(spei^2)*n + I(spei^3)*n, data = cdr, random = ~1|uniqueID, method="ML")
+m.null <- lme(anpp ~ year*trt_type, data = cdr, random = ~1|uniqueID, method="ML")
+m.La <- lme(anpp ~ spei + trt_type, data = cdr,random = ~1|uniqueID, method="ML")
+m.Li <- lme(anpp ~ spei*trt_type, data = cdr,random = ~1|uniqueID, method="ML")
+m.Qa <- lme(anpp ~ spei+trt_type + I(spei^2), data = cdr, random = ~1|uniqueID, method="ML")
+m.Qi <- lme(anpp ~ spei*trt_type + I(spei^2)*trt_type, data = cdr,random=~1|uniqueID,method="ML")
+m.Ca <- lme(anpp ~ spei+trt_type + I(spei^2) + I(spei^3),data = cdr,random=~1|uniqueID,method="ML")
+m.Ci <- lme(anpp ~ spei*trt_type + I(spei^2)*trt_type + I(spei^3)*trt_type, data = cdr, random = ~1|uniqueID, method="ML")
 
 # model selection
 AICc(m.null, m.La, m.Li, m.Qa, m.Qi, m.Ca, m.Ci)
 min(AICc(m.null, m.La, m.Li, m.Qa, m.Qi, m.Ca, m.Ci)[,2])
-#Best model is m.Ci
+#Best model is m.Qa
 
 # AR1 - autocorrelation 1, AR1 - autocorrelation 2 to best model from above
 #This is only necessary if expyear includes non-integer numbers
 # int.year <- exp.clim$expyear*2-1 #convert to integer
 # exp.clim$expyear <- int.year
 #Fit temporal autocorrelation models
-m.AR1 <- update(m.Ci,correlation = corAR1(form= ~treatment_year))
-m.AR2 <- update(m.Ci,correlation = corARMA(form= ~treatment_year,p=2))
+m.AR1 <- update(m.Qa,correlation = corAR1(form= ~treatment_year))
+m.AR2 <- update(m.Qa,correlation = corARMA(form= ~treatment_year,p=2))
 # model selection
-AICc(m.Ci, m.AR1, m.AR2)
+AICc(m.Qa, m.AR1, m.AR2)
 # best model m.Ci
-rsquared(m.Ci)
+rsquared(m.Qa)
 #Marginal R2:  the proportion of variance explained by the fixed factor(s) alone == 0.02
 #Conditional R2: he proportion of variance explained by both the fixed and random factors == 0.88
 
 #Evaluate model assumptions
-plot(m.Ci) #pretty linear 
-qqPlot(residuals(m.Ci)) ## concave up
-hist(residuals(m.Ci)) ## slightly right-skewed
+plot(m.Qa) #pretty linear 
+qqPlot(residuals(m.Qa)) ## concave up
+hist(residuals(m.Qa)) ## slightly right-skewed
 
 #Do sketchy frequentist tests on best model
-anova(m.Ci,type = "marginal") #F test -- cubic SPEI, N, interaction
-Anova(m.Ci,type = 2)# Chisq test. Differnet values for p-values, but same significance
+anova(m.Qa,type = "marginal") #F test -- cubic SPEI, N, interaction
+Anova(m.Qa,type = 2)# Chisq test. Differnet values for p-values, but same significance
 
 #Param estimates and post-hoc pairwise comparisons
-emtrends(m.Ci,~ n | degree, "spei", max.degree = 3) ## error message
-pairs(emtrends(m.Ci,~ n | degree , "spei", max.degree = 3)) ## error message
+emtrends(m.Qa,~ n | degree, "spei", max.degree = 3) ## error message
+pairs(emtrends(m.Qa,~ n | degree , "spei", max.degree = 3)) ## error message
 #The quadratic slope is the most different
 
 #Visualize CSF results---
 # get a plot of estimated values from the model, by each depth
 # visreg with ggplot graphics
-lm.Ci <- lm(anpp ~ spei*treatment + I(spei^2)*treatment + I(spei^3)*treatment, data = cdr) ## convert model to lm so that visreg will run
-visreg(lm.Ci, xvar = "spei", type = "conditional", by = "treatment", data = cdr, gg = TRUE, partial = F, rug = F, overlay = TRUE, alpha = 1) +
-  geom_point(aes(x = spei, y = anpp, color = treatment), alpha = 0.2, data = cdr) +
+biocon <- filter(cdr, project_name.x == "BioCON")
+cdr_nutnet <- filter(cdr, project_name.x == "NutNet")
+lm.Qa.biocon <- lm(anpp ~ spei+trt_type + I(spei^2), data = biocon)
+visreg(lm.Qa, xvar = "spei", type = "conditional", by = "trt_type", data = biocon, gg = TRUE, partial = F, rug = F, overlay = TRUE, alpha = 1) +
+  geom_point(aes(x = spei, y = anpp, color = trt_type), alpha = 0.2, data = biocon) +
   theme_bw() +
   labs(x="SPEI",
-       y="ANPP")
+       y="ANPP") +
+  facet_wrap(~project_name.x)
+lm.Qa.nutnet <- lm(anpp ~ spei+trt_type + I(spei^2), data = cdr_nutnet)
+visreg(lm.Qa, xvar = "spei", type = "conditional", by = "trt_type", data = cdr_nutnet, gg = TRUE, partial = F, rug = F, overlay = TRUE, alpha = 1) +
+  geom_point(aes(x = spei, y = anpp, color = trt_type), alpha = 0.2, data = cdr_nutnet) +
+  theme_bw() +
+  labs(x="SPEI",
+       y="ANPP") +
+  facet_wrap(~project_name.x)
 
 #Alternative visualization code if the above doesn't work
 cdr$predicted <- predict(m.Ci, cdr)
@@ -373,11 +377,11 @@ pairs(emtrends(m.Ca,~ n | degree , "spei", max.degree = 3)) ## getting NaNs
 # visreg with ggplot graphics
 kufs$n_levels <- factor(kufs$n, levels = c("0", '4', "8", "15", "16"))
 kufs$p_levels <- factor(kufs$p, levels = c("0", '8'))
-lm.Ca <- lm(anpp ~ spei*n_levels + I(spei^2) + I(spei^3), data = kufs)
+m.Ca_plot <- lm(anpp ~ spei*n_levels + I(spei^2) + I(spei^3), data = kufs)
 
 ## can't figure out how to get the points to be the correct colors, and I also don't know why it's only
 ## showing lines for E6
-visreg(lm.Ca, xvar = "spei", type = "conditional", by = "n_levels", data = kufs, gg = TRUE, partial = F, rug = F, overlay = TRUE, alpha = 1) +
+visreg(m.Ca_plot, xvar = "spei", type = "conditional", by = "n_levels", data = kufs, gg = TRUE, partial = F, rug = F, overlay = TRUE, alpha = 1) +
   geom_point(aes(x = spei, y = anpp, color = n_levels), alpha = 0.2, data = kufs) +
  # facet_wrap(~p_levels) +
   theme_bw() +
@@ -386,6 +390,11 @@ visreg(lm.Ca, xvar = "spei", type = "conditional", by = "n_levels", data = kufs,
 unique(kufs$n)
 #Alternative visualization code if the above doesn't work
 kufs$predicted <- predict(m.Ca, kufs)
+library(broom)
+m.Ca.nlevels <- lme(anpp ~ spei+n_levels + I(spei^2) + I(spei^3),data = kufs,random=~1|uniqueID,method="ML")
+AICc(m.Ca.nlevels)
+AICc(m.Ca)
+kufs_model_output <- coef(m.Ca.nlevels)
 
 #kufs_plot <- 
 ## experiment 2
@@ -870,3 +879,39 @@ min(AICc(m.null, m.null1, m.La, m.Li, m.Qa, m.Qi, m.Ca, m.Ci)[,2])
 ## null is still best, linear additive is second best
 kbs$predicted1 <- predict(m.Ca, kbs)
 
+##### trying to be more specific about treatment selection in the initial filtering ####
+
+unique(n_sites$trt_type)
+
+##blank for seeing which sites have SPEI in the model
+not_null_sites <- tibble(site_code = NA,
+                         keep = NA)
+
+
+for (i in unique(n_sites$site_code)) {
+  dat <- n_sites[n_sites$site_code == i, ]
+  
+  m.null <- lme(anpp ~ year*trt_type, data = dat, random = ~1|uniqueID, method="ML")
+  m.La <- lme(anpp ~ spei + trt_type, data = dat,random = ~1|uniqueID, method="ML")
+  m.Li <- lme(anpp ~ spei*trt_type, data = dat,random = ~1|uniqueID, method="ML")
+  m.Qa <- lme(anpp ~ spei+trt_type + I(spei^2), data = dat, random = ~1|uniqueID, method="ML")
+  m.Qi <- lme(anpp ~ spei*trt_type + I(spei^2)*trt_type, data = dat,random=~1|uniqueID,method="ML")
+  m.Ca <- lme(anpp ~ spei+trt_type + I(spei^2) + I(spei^3),data = dat,random=~1|uniqueID,method="ML")
+  m.Ci <- lme(anpp ~ spei*trt_type + I(spei^2)*trt_type + I(spei^3)*trt_type, data = dat, random = ~1|uniqueID, method="ML")
+  
+  null_aic <- AICc(m.null)
+  minimum_aic <- min(AICc(m.null, m.La, m.Li, m.Qa, m.Qi, m.Ca, m.Ci)[,2])
+  
+  keep <- ifelse(null_aic == minimum_aic, "no", "yes") ## is null is the best model
+  site_code <- i
+  pdata <- as.data.frame(site_code)
+  pdata$keep <- keep
+  
+  not_null_sites <- bind_rows(not_null_sites, pdata)
+}
+
+spei_sites_np <- not_null_sites %>%
+  filter(keep == "yes") %>%
+  distinct()
+print(spei_sites)
+## very consistently just the four sites still
