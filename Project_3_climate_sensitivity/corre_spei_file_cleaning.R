@@ -72,7 +72,7 @@ keep_sites <- unique(sites_with_n$site_code)
 print(keep_sites) ## 9 total sites
 
 
-## Yarra is the southern hemisphere, so need a different range for SPEI
+
 
 ## data frame for looking at effects of N and SPEI
 ##ugly and long way of making sure the right months' spei goes with the right sites
@@ -80,12 +80,15 @@ n_sites <- comb_data2 %>%
   filter(site_code %in% keep_sites) %>%
   filter(project_name %!in% dont_include)
 
-n_sites_april <- n_sites %>%
-  filter(site_code == "yarra.au") %>%
-  filter(month == 4)
-n_sites_october <- n_sites %>%
-  filter(site_code != 'yarra.au') %>%
-  filter(month == 10)
-n_sites <- bind_rows(n_sites_april, n_sites_october)
+## setting the end of the SPEI window for the month when harvest occurs
+## see "Site Metadata" in the Google Drive folder for more info
+## sites that harvest in August
+august_gs <- c("KNZ", "KBS", "CDR", "SERC", "cbgb.us", "KUFS", "NWT")
+## Yarra (Australia) is April, Sierra Foothills is May
+n_sites <- n_sites %>%
+  mutate(month_keep = ifelse(site_code %in% august_gs, 8, 
+                                    ifelse(site_code == 'yarra.us', 4, 5))) %>%
+  filter(month == month_keep) %>%
+  dplyr::select(-month_keep)
 
 ## done -- file needed for site-level analyses is n_sites
