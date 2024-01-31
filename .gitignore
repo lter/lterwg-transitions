@@ -51,9 +51,4 @@ Project_3_climate_sensitivity/JRN data/
 *.Rproj
 .DS_Store
 
-#ignore massive SPEI raw data
-
-
-#ignore csv
-*.csv
 
