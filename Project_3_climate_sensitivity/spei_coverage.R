@@ -56,7 +56,10 @@ data_corre <- left_join(corre_sites, all_SPEI_raw)  %>%
                              ifelse(site_code == 'yarra.us', 4, 
                                     ifelse(site_code == "SERC", 10, 5)))) %>%
   filter(month == month_keep) %>%
-  dplyr::select(-month_keep)
+  dplyr::select(-month_keep) %>%
+  group_by(site_code, year, treatment_year, month) %>%
+  summarize(spei = mean(spei)) %>%
+  ungroup()
 
 spei_100 <- all_SPEI_raw %>%
   filter(site_code %in% corre_site_names) %>%
@@ -65,4 +68,10 @@ spei_100 <- all_SPEI_raw %>%
                                     ifelse(site_code == "SERC", 10, 5)))) %>%
   filter(month == month_keep) %>%
   dplyr::select(-month_keep)
+
+ggplot() +
+  geom_histogram(data = spei_100, aes(x = spei), fill = "white", color = "black") +
+  geom_histogram(data = data_corre, aes(x = spei), fill = "blue", color = "black") +
+  facet_wrap(~site_code, nrow = 3) +
+  theme_bw()
   
