@@ -1,7 +1,7 @@
 ## master sheet of all sites
 source("Project_3_climate_sensitivity/corre_spei_file_cleaning.R")
 
-#test
+
 ### CDR - biocon ####
 cdr_biocon <- filter(n_sites, site_code == "CDR" & project_name == "BioCON")
 # just n versus control
@@ -418,8 +418,35 @@ m.Ci <- lme(anpp ~ spei*n + I(spei^2)*n + I(spei^3)*n, data = serc, random = ~1|
 # model selection
 AICc(m.null, m.La, m.Li, m.Qa, m.Qi, m.Ca, m.Ci)
 min(AICc(m.null, m.La, m.Li, m.Qa, m.Qi, m.Ca, m.Ci)[,2])
-#Best model is m.null
+#Best model is m.Ca
+fits <- data.frame("uniqueID" = names(fitted(object = m.Ca)),
+                   "anpp_model_fits" = fitted(object = m.Ca))
 
+# Drop rownames (purely for aesthetic reasons)
+rownames(fits) <- NULL
+
+# Bind onto "real" data
+serc_fits <- dplyr::left_join(x = serc, y = fits, by = "uniqueID")
+## make column for treatments for plotting
+
+serc_colors <- c("black", "#74c476")
+
+ggplot(data = serc_fits) +
+  geom_point(aes(x = spei, y = anpp, color = trt_type), alpha = 0.4, size = 2) +
+  geom_smooth(aes(x = spei, y = anpp_model_fits, color = trt_type, fill = trt_type), method = "lm", formula = y ~ x + I(x^2), se = F, linewidth = 2) +
+  theme_bw() +
+  scale_color_manual(values = serc_colors) +
+  scale_fill_manual(values = serc_colors) +
+  labs(x="SPEI",
+       y="ANPP") 
+ggplot(data = niwot_fits) +
+  geom_point(aes(x = spei, y = anpp, color = trt_type), alpha = 0.4, size = 2) +
+  geom_smooth(aes(x = spei, y = anpp_model_fits, color = trt_type), method = "lm", formula = y ~ x + I(x^2), se = F, linewidth = 2) +
+  theme_bw() +
+  scale_color_manual(values = niwot_colors) +
+  labs(x="SPEI",
+       y="ANPP") 
+r.squaredGLMM(m.final)
 
 ###sier.us - NutNet ####
 sier <- filter(n_sites, site_code == "sier.us" & project_name == "NutNet")
