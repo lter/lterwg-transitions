@@ -83,11 +83,12 @@ n_sites <- comb_data2 %>%
 ## setting the end of the SPEI window for the month when harvest occurs
 ## see "Site Metadata" in the Google Drive folder for more info
 ## sites that harvest in August
-august_gs <- c("KNZ", "KBS", "CDR", "SERC", "cbgb.us", "KUFS", "NWT")
+august_gs <- c("KNZ", "KBS", "CDR", "cbgb.us", "KUFS", "NWT")
 ## Yarra (Australia) is April, Sierra Foothills is May
 n_sites <- n_sites %>%
   mutate(month_keep = ifelse(site_code %in% august_gs, 8, 
-                                    ifelse(site_code == 'yarra.us', 4, 5))) %>%
+                                    ifelse(site_code == 'yarra.us', 4,
+                                           ifelse(site_code == "SERC", 10, 5)))) %>%
   filter(month == month_keep) %>%
   dplyr::select(-month_keep)
 
