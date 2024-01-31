@@ -62,6 +62,31 @@ min(AICc(m.null, m.La, m.Li, m.Qa, m.Qi, m.Ca, m.Ci)[,2])
 ## additive models are better fits than interactive models, generally
 summary(m.Ca)
 
+# Extract fitted values
+fits <- data.frame("uniqueID" = names(fitted(object = m.Ca)),
+                   "anpp_model_fits" = fitted(object = m.Ca))
+
+# Drop rownames (purely for aesthetic reasons)
+rownames(fits) <- NULL
+
+# Bind onto "real" data
+e6_fits <- dplyr::left_join(x = e6, y = fits, by = "uniqueID")
+
+# Make desired plot
+ggplot(data = e6_fits, aes(x = spei, y = anpp_model_fits, color = as.factor(p))) +
+  geom_point(alpha = 0.2) +
+  geom_smooth(method = "lm", formula = y ~ x + I(x^2) + I(x^3), se = F) +
+  facet_wrap( ~ n) +
+  theme_bw() +
+  labs(x="SPEI",
+       y="ANPP") +
+  scale_y_continuous(limits = c(0,1000))
+
+
+
+
+
+
 ## try to plot the lme model; doesn't work
 visreg(m.Ca, xvar = "spei", type = "conditional", by = "n", data = e6, gg = TRUE, partial = F, rug = F, overlay = TRUE, alpha = 1) 
 geom_point(aes(x = spei, y = anpp), alpha = 0.2, data = e6) +
