@@ -70,6 +70,7 @@ rownames(fits) <- NULL
 
 # Bind onto "real" data
 cdr_nutnet_fits <- dplyr::left_join(x = cdr_nutnet, y = fits, by = "uniqueID")
+cdr_colors <- c("black", "#74c476", "#6baed6", "#9e9ac8")
 
 # Make desired plot
 ggplot(data = cdr_nutnet_fits) +
@@ -79,6 +80,8 @@ ggplot(data = cdr_nutnet_fits) +
   theme_bw() +
   labs(x="SPEI",
        y="ANPP") +
+  scale_color_manual(values = cdr_colors) +
+  scale_fill_manual(values = cdr_colors) +
   scale_y_continuous(limits = c(0,1000))
 r.squaredGLMM(m.Ca_int)
 
@@ -341,18 +344,6 @@ ggplot(data = kufs_e6_fits) +
        y="ANPP") 
 r.squaredGLMM(m.final)
 
-<<<<<<< HEAD
-=======
-ggplot(kufs_e6, aes(x = spei, y = anpp, color = as.factor(p))) +
-  geom_point() +
-  facet_wrap(~n) +
-  geom_smooth(method = "lm", formula = y ~ x + I(x^2), span = 1, se = F) +
-  labs(y = "ANPP")
-min(kufs_e6$spei)
-max(kufs_e6$spei)
-<<<<<<< HEAD
-=======
->>>>>>> 90542ff1d1a05d53734ec13c88077450733a4394
 
 ### niwot -- snow ####
 niwot <- filter(n_sites, site_code == "NWT")
@@ -517,9 +508,6 @@ m.Ci_p <- lme(anpp ~ spei*n*p + I(spei^2)*n*p + I(spei^3)*p, data = yarra, rando
 AICc(m.null_new, m.La_int, m.La_n, m.La_p, m.Li_int, m.Li_n, m.Li_p, m.Qa_int, m.Qa_n, m.Qa_p, m.Qi_int, m.Qi_n, m.Qi_p, m.Ca_int, m.Ca_n, m.Ca_p, m.Ci_int, m.Ci_n, m.Ci_p)
 min(AICc(m.null_new, m.La_int, m.La_n, m.La_p, m.Li_int, m.Li_n, m.Li_p, m.Qa_int, m.Qa_n, m.Qa_p, m.Qi_int, m.Qi_n, m.Qi_p, m.Ca_int, m.Ca_n, m.Ca_p, m.Ci_int, m.Ci_n, m.Ci_p)
     [,2])
-<<<<<<< HEAD
-# m.Ca_n
-## none within 2
 
 fits <- data.frame("uniqueID" = names(fitted(object = m.Ca_n)),
                    "anpp_model_fits" = fitted(object = m.Ca_n))
@@ -529,6 +517,7 @@ rownames(fits) <- NULL
 
 # Bind onto "real" data
 yarra_fits <- dplyr::left_join(x = yarra, y = fits, by = "uniqueID")
+yarra_colors <- c("black", "#74c476", "#6baed6", "#9e9ac8")
 
 # Make desired plot
 ggplot(data = yarra_fits) +
@@ -537,9 +526,8 @@ ggplot(data = yarra_fits) +
   #facet_wrap( ~ n) +
   theme_bw() +
   labs(x="SPEI",
-       y="ANPP") 
+       y="ANPP") +
+  scale_color_manual(values = yarra_colors) +
+  scale_fill_manual(values = yarra_colors)
 r.squaredGLMM(m.Ca_n)
 
-=======
->>>>>>> c30c6b0e6b00b6d6522218b0f626d3368c091d43
->>>>>>> 90542ff1d1a05d53734ec13c88077450733a4394
