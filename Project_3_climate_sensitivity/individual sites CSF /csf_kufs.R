@@ -2,7 +2,7 @@
 
 source("Project_3_climate_sensitivity/corre_spei_file_cleaning.R")
 
-
+### Nick -- the issues are in the KUFS E6 header 
 kufs <- n_sites %>%
   filter(site_code == "KUFS")
 
@@ -36,6 +36,7 @@ min(AICc(m.null, m.La, m.Li, m.Qa, m.Qi, m.Ca, m.Ci)[,2])
 # kufs$p_levels <- factor(kufs$p, levels = c("0", '8'))
 m.Ci_plot <- lm(anpp ~ spei*trt_type + I(spei^2)*trt_type + I(spei^3)*trt_type, data = e2)
 
+## this one does what we want it to :)
 visreg(m.Ci_plot, xvar = "spei", type = "conditional", by = "trt_type", data = e2, gg = TRUE, partial = F, rug = F, overlay = TRUE, alpha = 1) +
   geom_point(aes(x = spei, y = anpp, color = trt_type), alpha = 0.2, data = e2) +
   # facet_wrap(~p_levels) +
@@ -60,10 +61,31 @@ min(AICc(m.null, m.La, m.Li, m.Qa, m.Qi, m.Ca, m.Ci)[,2])
 #Min AICc model is m.Ca: 
 ## additive models are better fits than interactive models, generally
 summary(m.Ca)
-#Visualize CSF results---
 
+## try to plot the lme model; doesn't work
+visreg(m.Ca, xvar = "spei", type = "conditional", by = "n", data = e6, gg = TRUE, partial = F, rug = F, overlay = TRUE, alpha = 1) 
+geom_point(aes(x = spei, y = anpp), alpha = 0.2, data = e6) +
+  #facet_grid(p~n) +
+  theme_bw() +
+  labs(x="SPEI",
+       y="ANPP")
+
+#make an lm model just for plotting -- same as m.Ca just no random effects
+lm.Ca <- lm(anpp ~ spei+n*p + I(spei^2) + I(spei^3),data = e6)
+
+visreg(lm.Ca, xvar = "spei", type = "conditional", by = "n", data = e6, gg = TRUE, partial = F, rug = F, overlay = TRUE, alpha = 1) + 
+  geom_point(aes(x = spei, y = anpp), alpha = 0.2, data = e6) +
+  #facet_grid(p~n) +
+  theme_bw() +
+  labs(x="SPEI",
+       y="ANPP")
+## can't see the P data; also can't see the N = 8 data for some reason, which is weird
+
+
+## ggplot with geom_smooth just to visualize 
 ggplot(e6, aes(x = spei, y = anpp, color = as.factor(p))) +
   geom_point() +
-  facet_wrap(~n) +
+  facet_wrap(~n, labels = c("0g N", "4g N", "8g N", "16g N")) +
   geom_smooth(method = "lm", formula = y ~ x + I(x^2) + I(x^3), span = 1, se = F) +
-  labs(y = "ANPP")
+  labs(y = "ANPP") +
+  theme_bw()
