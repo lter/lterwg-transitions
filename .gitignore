@@ -51,4 +51,6 @@ Project_3_climate_sensitivity/JRN data/
 *.Rproj
 .DS_Store
 
+# Ignore the CORRE SPEI file 
+SPEI/SPEI_CORRE.csv
 
