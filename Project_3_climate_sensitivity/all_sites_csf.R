@@ -446,7 +446,7 @@ ggplot(data = niwot_fits) +
   scale_color_manual(values = niwot_colors) +
   labs(x="SPEI",
        y="ANPP") 
-r.squaredGLMM(m.final)
+r.squaredGLMM(m.Ca)
 
 ###sier.us - NutNet ####
 sier <- filter(n_sites, site_code == "sier.us" & project_name == "NutNet")
