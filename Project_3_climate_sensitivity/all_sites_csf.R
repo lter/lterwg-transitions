@@ -348,3 +348,145 @@ ggplot(kufs_e6, aes(x = spei, y = anpp, color = as.factor(p))) +
   labs(y = "ANPP")
 min(kufs_e6$spei)
 max(kufs_e6$spei)
+<<<<<<< HEAD
+=======
+
+## test out cedar creek nutnet site with N and P independent in the models ####
+cdr_nutnet <- filter(n_sites, site_code == "CDR" & project_name == "NutNet")
+# use trt type
+
+
+## normal
+m.null <- lme(anpp ~ year*trt_type, data = cdr_nutnet, random = ~1|uniqueID, method="ML")
+m.La <- lme(anpp ~ spei + trt_type, data = cdr_nutnet,random = ~1|uniqueID, method="ML")
+m.Li <- lme(anpp ~ spei*trt_type, data = cdr_nutnet,random = ~1|uniqueID, method="ML")
+m.Qa <- lme(anpp ~ spei+trt_type + I(spei^2), data = cdr_nutnet, random = ~1|uniqueID, method="ML")
+m.Qi <- lme(anpp ~ spei*trt_type + I(spei^2)*trt_type, data = cdr_nutnet,random=~1|uniqueID,method="ML")
+m.Ca <- lme(anpp ~ spei+trt_type + I(spei^2) + I(spei^3),data = cdr_nutnet,random=~1|uniqueID, method="ML")
+m.Ci <- lme(anpp ~ spei*trt_type + I(spei^2)*trt_type + I(spei^3)*trt_type, data = cdr_nutnet, random = ~1|uniqueID, method="ML")
+
+# model selection
+AICc(m.null, m.La, m.Li, m.Qa, m.Qi, m.Ca, m.Ci)
+min(AICc(m.null, m.La, m.Li, m.Qa, m.Qi, m.Ca, m.Ci)[,2])
+
+## new model fits
+m.null_new <- lme(anpp ~ year*n*p, data = cdr_nutnet, random = ~1|uniqueID, method="ML")
+
+m.La_int <- lme(anpp ~ spei + n*p, data = cdr_nutnet,random = ~1|uniqueID, method="ML")
+m.La_n <- lme(anpp ~ spei + n, data = cdr_nutnet,random = ~1|uniqueID, method="ML")
+m.La_p <- lme(anpp ~ spei + p, data = cdr_nutnet,random = ~1|uniqueID, method="ML")
+
+m.Li_int <- lme(anpp ~ spei*n*p, data = cdr_nutnet,random = ~1|uniqueID, method="ML")
+m.Li_n <- lme(anpp ~ spei*n, data = cdr_nutnet,random = ~1|uniqueID, method="ML")
+m.Li_p <- lme(anpp ~ spei*p, data = cdr_nutnet,random = ~1|uniqueID, method="ML")
+
+m.Qa_int <- lme(anpp ~ spei+n*p + I(spei^2), data = cdr_nutnet, random = ~1|uniqueID, method="ML")
+m.Qa_n <- lme(anpp ~ spei+n + I(spei^2), data = cdr_nutnet, random = ~1|uniqueID, method="ML")
+m.Qa_p <- lme(anpp ~ spei+p + I(spei^2), data = cdr_nutnet, random = ~1|uniqueID, method="ML")
+
+m.Qi_int <- lme(anpp ~ spei*n*p + I(spei^2)*n*p, data = cdr_nutnet,random=~1|uniqueID,method="ML")
+m.Qi_n <- lme(anpp ~ spei*n*p + I(spei^2)*n, data = cdr_nutnet,random=~1|uniqueID,method="ML")
+m.Qi_p <- lme(anpp ~ spei*n*p + I(spei^2)*p, data = cdr_nutnet,random=~1|uniqueID,method="ML")
+
+m.Ca_int <- lme(anpp ~ spei+n*p + I(spei^2) + I(spei^3),data = cdr_nutnet,random=~1|uniqueID, method="ML")
+m.Ca_n <- lme(anpp ~ spei+n + I(spei^2) + I(spei^3),data = cdr_nutnet,random=~1|uniqueID, method="ML")
+m.Ca_p <- lme(anpp ~ spei+p + I(spei^2) + I(spei^3),data = cdr_nutnet,random=~1|uniqueID, method="ML")
+
+m.Ci_int <- lme(anpp ~ spei*n*p + I(spei^2)*n*p + I(spei^3)*n*p, data = cdr_nutnet, random = ~1|uniqueID, method="ML")
+m.Ci_n <- lme(anpp ~ spei*n*p + I(spei^2)*n + I(spei^3)*n, data = cdr_nutnet, random = ~1|uniqueID, method="ML")
+m.Ci_p <- lme(anpp ~ spei*n*p + I(spei^2)*p + I(spei^3)*p, data = cdr_nutnet, random = ~1|uniqueID, method="ML")
+
+# model selection
+AICc(m.null_new, m.La_int, m.La_n, m.La_p, m.Li_int, m.Li_n, m.Li_p, m.Qa_int, m.Qa_n, m.Qa_p, m.Qi_int, m.Qi_n, m.Qi_p, m.Ca_int, m.Ca_n, m.Ca_p, m.Ci_int, m.Ci_n, m.Ci_p)
+min(AICc(m.null_new, m.La_int, m.La_n, m.La_p, m.Li_int, m.Li_n, m.Li_p, m.Qa_int, m.Qa_n, m.Qa_p, m.Qi_int, m.Qi_n, m.Qi_p, m.Ca_int, m.Ca_n, m.Ca_p, m.Ci_int, m.Ci_n, m.Ci_p)
+[,2])
+
+
+ggplot(cdr_nutnet, aes(x = spei, y = anpp, color = trt_type)) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = y ~ x + I(x^2) + I(x^3), se = F) +
+  theme_bw()
+
+
+## try with cbgb -- see if it changes null ones ####
+cbgb <- filter(n_sites, site_code == "cbgb.us" & project_name == "NutNet")
+
+m.null_new <- lme(anpp ~ year*n*p, data = cbgb, random = ~1|uniqueID, method="ML")
+
+m.La_int <- lme(anpp ~ spei + n*p, data = cbgb,random = ~1|uniqueID, method="ML")
+m.La_n <- lme(anpp ~ spei + n, data = cbgb,random = ~1|uniqueID, method="ML")
+m.La_p <- lme(anpp ~ spei + p, data = cbgb,random = ~1|uniqueID, method="ML")
+
+m.Li_int <- lme(anpp ~ spei*n*p, data = cbgb,random = ~1|uniqueID, method="ML")
+m.Li_n <- lme(anpp ~ spei*n, data = cbgb,random = ~1|uniqueID, method="ML")
+m.Li_p <- lme(anpp ~ spei*p, data = cbgb,random = ~1|uniqueID, method="ML")
+
+m.Qa_int <- lme(anpp ~ spei+n*p + I(spei^2), data = cbgb, random = ~1|uniqueID, method="ML")
+m.Qa_n <- lme(anpp ~ spei+n + I(spei^2), data = cbgb, random = ~1|uniqueID, method="ML")
+m.Qa_p <- lme(anpp ~ spei+p + I(spei^2), data = cbgb, random = ~1|uniqueID, method="ML")
+
+m.Qi_int <- lme(anpp ~ spei*n*p + I(spei^2)*n*p, data = cbgb,random=~1|uniqueID,method="ML")
+m.Qi_n <- lme(anpp ~ spei*n*p + I(spei^2)*n, data = cbgb,random=~1|uniqueID,method="ML")
+m.Qi_p <- lme(anpp ~ spei*n*p + I(spei^2)*p, data = cbgb,random=~1|uniqueID,method="ML")
+
+m.Ca_int <- lme(anpp ~ spei+n*p + I(spei^2) + I(spei^3),data = cbgb,random=~1|uniqueID, method="ML")
+m.Ca_n <- lme(anpp ~ spei+n + I(spei^2) + I(spei^3),data = cbgb,random=~1|uniqueID, method="ML")
+m.Ca_p <- lme(anpp ~ spei+p + I(spei^2) + I(spei^3),data = cbgb,random=~1|uniqueID, method="ML")
+
+m.Ci_int <- lme(anpp ~ spei*n*p + I(spei^2)*n*p + I(spei^3)*n*p, data = cbgb, random = ~1|uniqueID, method="ML")
+m.Ci_n <- lme(anpp ~ spei*n*p + I(spei^2)*n + I(spei^3)*n, data = cbgb, random = ~1|uniqueID, method="ML")
+m.Ci_p <- lme(anpp ~ spei*n*p + I(spei^2)*p + I(spei^3)*p, data = cbgb, random = ~1|uniqueID, method="ML")
+
+# model selection
+AICc(m.null_new, m.La_int, m.La_n, m.La_p, m.Li_int, m.Li_n, m.Li_p, m.Qa_int, m.Qa_n, m.Qa_p, m.Qi_int, m.Qi_n, m.Qi_p, m.Ca_int, m.Ca_n, m.Ca_p, m.Ci_int, m.Ci_n, m.Ci_p)
+min(AICc(m.null_new, m.La_int, m.La_n, m.La_p, m.Li_int, m.Li_n, m.Li_p, m.Qa_int, m.Qa_n, m.Qa_p, m.Qi_int, m.Qi_n, m.Qi_p, m.Ca_int, m.Ca_n, m.Ca_p, m.Ci_int, m.Ci_n, m.Ci_p)
+    [,2])
+
+
+## try with yarra ####
+yarra <- filter(n_sites, site_code == "yarra.au")
+## NutNet site -- use trt_type
+m.null <- lme(anpp ~ year*trt_type, data = yarra, random = ~1|uniqueID, method="ML")
+m.La <- lme(anpp ~ spei + trt_type, data = yarra,random = ~1|uniqueID, method="ML")
+m.Li <- lme(anpp ~ spei*trt_type, data = yarra,random = ~1|uniqueID, method="ML")
+m.Qa <- lme(anpp ~ spei+trt_type + I(spei^2), data = yarra, random = ~1|uniqueID, method="ML")
+m.Qi <- lme(anpp ~ spei*trt_type + I(spei^2)*trt_type, data = yarra,random=~1|uniqueID,method="ML")
+m.Ca <- lme(anpp ~ spei+trt_type + I(spei^2) + I(spei^3),data = yarra,random=~1|uniqueID, method="ML")
+m.Ci <- lme(anpp ~ spei*trt_type + I(spei^2)*trt_type + I(spei^3)*trt_type, data = yarra, random = ~1|uniqueID, method="ML")
+
+# model selection
+AICc(m.null, m.La, m.Li, m.Qa, m.Qi, m.Ca, m.Ci)
+min(AICc(m.null, m.La, m.Li, m.Qa, m.Qi, m.Ca, m.Ci)[,2])
+
+
+m.null_new <- lme(anpp ~ year*n*p, data = yarra, random = ~1|uniqueID, method="ML")
+
+m.La_int <- lme(anpp ~ spei + n*p, data = yarra,random = ~1|uniqueID, method="ML")
+m.La_n <- lme(anpp ~ spei + n, data = yarra,random = ~1|uniqueID, method="ML")
+m.La_p <- lme(anpp ~ spei + p, data = yarra,random = ~1|uniqueID, method="ML")
+
+m.Li_int <- lme(anpp ~ spei*n*p, data = yarra,random = ~1|uniqueID, method="ML")
+m.Li_n <- lme(anpp ~ spei*n, data = yarra,random = ~1|uniqueID, method="ML")
+m.Li_p <- lme(anpp ~ spei*p, data = yarra,random = ~1|uniqueID, method="ML")
+
+m.Qa_int <- lme(anpp ~ spei+n*p + I(spei^2), data = yarra, random = ~1|uniqueID, method="ML")
+m.Qa_n <- lme(anpp ~ spei+n + I(spei^2), data = yarra, random = ~1|uniqueID, method="ML")
+m.Qa_p <- lme(anpp ~ spei+p + I(spei^2), data = yarra, random = ~1|uniqueID, method="ML")
+
+m.Qi_int <- lme(anpp ~ spei*n*p + I(spei^2)*n*p, data = yarra,random=~1|uniqueID,method="ML")
+m.Qi_n <- lme(anpp ~ spei*n*p + I(spei^2)*n, data = yarra,random=~1|uniqueID,method="ML")
+m.Qi_p <- lme(anpp ~ spei*n*p + I(spei^2)*p, data = yarra,random=~1|uniqueID,method="ML")
+
+m.Ca_int <- lme(anpp ~ spei+n*p + I(spei^2) + I(spei^3),data = yarra,random=~1|uniqueID, method="ML")
+m.Ca_n <- lme(anpp ~ spei+n + I(spei^2) + I(spei^3),data = yarra,random=~1|uniqueID, method="ML")
+m.Ca_p <- lme(anpp ~ spei+p + I(spei^2) + I(spei^3),data = yarra,random=~1|uniqueID, method="ML")
+
+m.Ci_int <- lme(anpp ~ spei*n*p + I(spei^2)*n*p + I(spei^3)*n*p, data = yarra, random = ~1|uniqueID, method="ML")
+m.Ci_n <- lme(anpp ~ spei*n*p + I(spei^2)*n + I(spei^3)*n, data = yarra, random = ~1|uniqueID, method="ML")
+m.Ci_p <- lme(anpp ~ spei*n*p + I(spei^2)*p + I(spei^3)*p, data = yarra, random = ~1|uniqueID, method="ML")
+
+# model selection
+AICc(m.null_new, m.La_int, m.La_n, m.La_p, m.Li_int, m.Li_n, m.Li_p, m.Qa_int, m.Qa_n, m.Qa_p, m.Qi_int, m.Qi_n, m.Qi_p, m.Ca_int, m.Ca_n, m.Ca_p, m.Ci_int, m.Ci_n, m.Ci_p)
+min(AICc(m.null_new, m.La_int, m.La_n, m.La_p, m.Li_int, m.Li_n, m.Li_p, m.Qa_int, m.Qa_n, m.Qa_p, m.Qi_int, m.Qi_n, m.Qi_p, m.Ca_int, m.Ca_n, m.Ca_p, m.Ci_int, m.Ci_n, m.Ci_p)
+    [,2])
+>>>>>>> c30c6b0e6b00b6d6522218b0f626d3368c091d43
