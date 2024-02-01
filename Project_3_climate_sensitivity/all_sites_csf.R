@@ -3,6 +3,8 @@ source("Project_3_climate_sensitivity/corre_spei_file_cleaning.R")
 
 ## read in SEV data
 sev <- read.csv(here::here("Project_3_climate_sensitivity", "SEV_data", "sev_nfert_corre.csv"))
+source("Project_3_climate_sensitivity/CDR/cdr-e001_e002.R")
+
 ### CDR - biocon ####
 cdr_biocon <- filter(n_sites, site_code == "CDR" & project_name == "BioCON")
 # just n versus control
@@ -19,15 +21,56 @@ m.Ci <- lme(anpp ~ spei*n + I(spei^2)*n + I(spei^3)*n, data = cdr_biocon, random
 AICc(m.null, m.La, m.Li, m.Qa, m.Qi, m.Ca, m.Ci)
 min(AICc(m.null, m.La, m.Li, m.Qa, m.Qi, m.Ca, m.Ci)[,2])
 #Best model is m.Ci
-##make an lm for plotting
-lm.null <- lm(anpp ~ year*n, data = cdr_biocon)
 
-visreg(lm.null, xvar = "year", type = "conditional", by = "n", data = cdr_biocon, gg = TRUE, partial = F, rug = F, overlay = TRUE, alpha = 1) +
-  geom_point(aes(x = year, y = anpp), alpha = 0.2, data = cdr_biocon) +
-  # facet_grid(p~n) +
+### CDR - e002 ####
+cdr_spei <- all_SPEI_raw %>%
+  filter(site_code == "CDR") %>%
+  filter(month == 9) %>%
+  dplyr::select(-site_code)
+
+cdr1 <- left_join(cdr1, cdr_spei, by = "year")
+m.null <- lme(anpp ~ year*n, data = cdr1, random = ~1|uniqueID, method="ML")
+m.La <- lme(anpp ~ spei + n, data = cdr1,random = ~1|uniqueID, method="ML")
+m.Li <- lme(anpp ~ spei*n, data = cdr1,random = ~1|uniqueID, method="ML")
+m.Qa <- lme(anpp ~ spei+n + I(spei^2), data = cdr1, random = ~1|uniqueID, method="ML")
+m.Qi <- lme(anpp ~ spei*n + I(spei^2)*n, data = cdr1,random=~1|uniqueID,method="ML")
+m.Ca <- lme(anpp ~ spei+n + I(spei^2) + I(spei^3),data = cdr1,random=~1|uniqueID, method="ML")
+m.Ci <- lme(anpp ~ spei*n + I(spei^2)*n + I(spei^3)*n, data = cdr1, random = ~1|uniqueID, method="ML")
+
+# model selection
+AICc(m.null, m.La, m.Li, m.Qa, m.Qi, m.Ca, m.Ci)
+min(AICc(m.null, m.La, m.Li, m.Qa, m.Qi, m.Ca, m.Ci)[,2])
+
+summary(m.Ci)
+fits <- data.frame("uniqueID" = names(fitted(object = m.Ci)),
+                   "anpp_model_fits" = fitted(object = m.Ci))
+
+# Drop rownames (purely for aesthetic reasons)
+rownames(fits) <- NULL
+
+# Bind onto "real" data
+cdr_e002_fits <- dplyr::left_join(x = cdr1, y = fits, by = "uniqueID")
+cdr_e002_fits$n_level <- factor(as.character(cdr_e002_fits$n))
+unique(cdr_e002_fits$n_level)
+cdr_e002_fits$n_level <- factor(cdr_e002_fits$n_level, levels = c("0", "3", "6", "10", "16", "28", "50", "80"))
+
+cdr_e002_colors <- c("black", "#deebf7","#c6dbef","#9ecae1","#6baed6","#4292c6","#2171b5","#084594")
+
+# Make desired plot
+ggplot(data = cdr_e002_fits) +
+  geom_point(aes(x = spei, y = anpp, color = n_level), alpha = 0.2) +
+  geom_smooth(aes(x = spei, y = anpp_model_fits, color = n_level, fill = n_level)) +
+  #facet_wrap( ~ n) +
   theme_bw() +
-  labs(x="YEAR",
-       y="ANPP")
+  labs(x="SPEI",
+       y="ANPP") +
+  scale_color_manual(values = cdr_e002_colors) +
+  scale_fill_manual(values = cdr_e002_colors) +
+  scale_y_continuous(limits = c(0,1000))
+r.squaredGLMM(m.Ca)
+final_model_cdr_e002 <- m.Ca
+
+
 ## CDR - NutNet ####
 cdr_nutnet <- filter(n_sites, site_code == "CDR" & project_name == "NutNet")
 
@@ -235,7 +278,7 @@ knz_pplots_fits <- knz_pplots_fits %>%
 unique(knz_pplots_fits$trt)
 sort(unique(knz_pplots_fits$trt))
 knz_pplots_fits$trt <- factor(knz_pplots_fits$trt, levels = c("N0P0", "N0P2.5", "N0P5", "N0P10", "N10P0", "N10P2.5", "N10P5", "N10P10"))
-knz_color_scale <- c("black", "#cbc9e2","#9e9ac8","#6a51a3", "#bae4b3","#74c476","#238b45", "#2171b5")
+knz_color_scale <- c("black", "#cbc9e2","#9e9ac8","#6a51a3", "#bae4b3","#deebf7","#9ecae1","#3182bd")
 # Make desired plot
 ggplot(data = knz_pplots_fits) +
   geom_point(aes(x = spei, y = anpp, color = trt), alpha = 0.4, size = 2) +
@@ -1230,29 +1273,92 @@ map_table <- tibble(name = c("cdr_nutnet", "knz_pplots", "kufs_e6", "niwot", "se
 all_table1 <- left_join(all_table, map_table, by = "name") %>%
   pivot_wider(names_from = "parameter", values_from = c("Value", "Std.Error"))
 summary(final_model_yarra)
+names(all_table1)
 names(all_table1) <- c("name", "map", "map_cv", "mat", "intercept", "spei", "n", "p",
-                       "spei2", "spei3", "n_by_p", "intercept_se", "spei_se", "n_se", "p_se", "spei2_se", "spei3_se", "n_by_p_se")
+                       "spei2", "spei3", "n_by_p", "spei_by_n", "spei2_by_n", "spei3_by_n",
+                       "intercept_se", "spei_se", "n_se", "p_se", "spei2_se", "spei3_se", "n_by_p_se",
+                       "spei_by_n_se", "spei2_by_n_se", "spei3_by_n_se")
 ggplot(all_table1, aes(x = map, y = n)) +
-  geom_point() +
-  theme_bw()
-
+  geom_point(aes(color = name), size = 3) +
+  geom_smooth(method = "lm", se = T, color = "black", linetype = 2, alpha = 0.4) +
+  xlab("MAP (mm)") +
+  ylab("N Coefficient from model") +
+  theme_bw() +
+  annotate(geom = "text", x = 800, y = -0.031, label = "R2 = 0.1, p = 0.26")
+summary(lm(n ~ map, data = all_table1))
 ggplot(all_table1, aes(x = map_cv, y = n)) +
-  geom_point() +
-  theme_bw()
+  geom_point(aes(color = name), size = 3) +
+  geom_smooth(method = "lm", se = T, color = "black", linetype = 2, alpha = 0.4) +
+  xlab("CV of MAP") +
+  ylab("N Coefficient from model") +
+  theme_bw() +
+  annotate(geom = "text", x = 50, y = -0.024, label = "R2 = -0.2, p = 0.85")
+
+summary(lm(n ~ map_cv, data = all_table1))
+
 
 ggplot(all_table1, aes(x = map_cv, y = spei3)) +
-  geom_errorbar(aes(ymin = spei3 - spei3_se, ymax = spei3 + spei3_se), width = 0.1) +
-  geom_point() +
+  geom_errorbar(aes(ymin = spei3 - spei3_se, ymax = spei3 + spei3_se, color = name), width = 0.1) +
+  geom_point(aes(color = name), size = 3) +
+  geom_smooth(method = "lm", se = T, color = "black", linetype = 2, alpha = 0.4) +
+  xlab("CV of MAP") +
+  ylab("Cubic SPEI coefficient from model") +
+  theme_bw()
+
+ggplot(all_table1, aes(x = map, y = spei3)) +
+  geom_errorbar(aes(ymin = spei3 - spei3_se, ymax = spei3 + spei3_se, color = name), width = 0.1) +
+  geom_point(aes(color = name), size = 3) +
+  geom_smooth(method = "lm", se = T, color = "black", linetype = 2, alpha = 0.4) +
+  xlab("MAP (mm) ") +
+  ylab("Cubic SPEI coefficient from model") +
+  theme_bw()
+
+ggplot(all_table1, aes(x = map, y = spei2_by_n)) +
+#  geom_errorbar(aes(ymin = spei3 - spei3_se, ymax = spei3 + spei3_se, color = name), width = 0.1) +
+  geom_point(aes(color = name), size = 3) +
+  geom_smooth(method = "lm", se = T, color = "black", linetype = 2, alpha = 0.4) +
+  xlab("MAP (mm) ") +
+  ylab("Quad SPEI coefficient from model") +
   theme_bw()
 
 ggplot(all_table1, aes(x = map_cv, y = spei, color = name)) +
   geom_errorbar(aes(ymin = spei - spei_se, ymax = spei + spei_se), width = 0.1) +
-  geom_point() +
+  geom_point(size = 3) +
+  xlab("MAP CV") +
+  ylab("SPEI coefficient (linear)") +
+  theme_bw()
+ggplot(all_table1, aes(x = map, y = spei, color = name)) +
+  geom_errorbar(aes(ymin = spei - spei_se, ymax = spei + spei_se), width = 0.1) +
+  geom_point(size = 3) +
+  xlab("MAP (mm)") +
+  ylab("SPEI coefficient (linear)") +
   theme_bw()
 
-ggplot(all_table1, aes(x = map_cv, y = spei2, color = name)) +
-  geom_errorbar(aes(ymin = spei2 - spei2_se, ymax = spei2 + spei2_se), width = 0.1) +
-  geom_point() +
-  theme_bw()
+ggplot(all_table1, aes(x = map, y = spei2)) +
+  geom_errorbar(aes(ymin = spei2 - spei2_se, ymax = spei2 + spei2_se, color = name), width = 0.1) +
+  geom_point(aes(color = name), size = 3) +
+  geom_smooth(method = "lm", se = T, color = "black", linetype = 2, alpha = 0.4) +
+  xlab("MAP CV") +
+  ylab("Coefficient of SPEI (quadratic)") +
+ # scale_x_continuous(limits = c(25, 80)) +
+  theme_bw() +
+  annotate(geom = "text", x = 800, y = 1, label = "R2 = -0.16, p = 0.56")
 
-summary(lm(spei2 ~ map_cv, data = all_table1))
+summary(lm(spei2 ~ map, data = all_table1))
+
+ggplot(all_table1, aes(x = map_cv, y = spei3)) +
+  geom_errorbar(aes(ymin = spei3 - spei3_se, ymax = spei3 + spei3_se, color = name), width = 0.1) +
+  geom_point(aes(color = name), size = 3) +
+  geom_smooth(method = "lm", se = T, color = "black", linetype = 2, alpha = 0.4) +
+  xlab("MAP CV") +
+  ylab("Coefficient of SPEI (cubic)") +
+  # scale_x_continuous(limits = c(25, 80)) +
+  theme_bw() +
+  annotate(geom = "text", x = 30, y = -2, label = "R2 = 0.46, p = 0.198")
+summary(lm(spei3 ~ map_cv, data = all_table1))
+
+ggplot(all_table1, aes(x = name, y = map, color = name)) +
+  geom_point(size = 3) +
+  ylab("MAP (mm)") +
+  xlab("Site name") +
+  theme_bw()
