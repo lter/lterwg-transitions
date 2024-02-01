@@ -96,3 +96,18 @@ n_sites <- n_sites %>%
   mutate(anpp_standardized = z_score(anpp)) %>%
   ungroup()
 ## done -- file needed for site-level analyses is n_sites
+
+## process CoRRE MAP and MAT data
+clim <- read.csv(here::here("SPEI", "corre_map_mat.csv"))
+sites <- unique(n_sites$site_code)
+names(clim)
+
+clim1 <- clim %>%
+  filter(site_code %in% sites) %>%
+  dplyr::select(site_code, project_name, treatment_year, calendar_year, MAT, MAP) %>%
+  rename(year = calendar_year) %>%
+  group_by(site_code, treatment_year, year) %>%
+  summarize(mean_map = mean(MAP),
+            mean_mat = mean(MAT))
+
+
