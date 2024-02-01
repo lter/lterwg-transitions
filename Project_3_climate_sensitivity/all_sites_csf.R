@@ -1362,3 +1362,5 @@ ggplot(all_table1, aes(x = name, y = map, color = name)) +
   ylab("MAP (mm)") +
   xlab("Site name") +
   theme_bw()
+
+
