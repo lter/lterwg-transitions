@@ -572,7 +572,7 @@ min(AICc(m.null_new, m.La_int, m.La_n, m.La_p, m.Li_int, m.Li_n, m.Li_p, m.Qa_in
 #Best model is m.null
 
 ### yarra NutNet ####
-yarra <- filter(n_sites, site_code == "yarra.au")
+yarra <- filter(n_sites, site_code == "yarra.au" & treatment_year != 0)
 
 m.null_new <- lme(anpp ~ year*n*p, data = yarra, random = ~1|uniqueID, method="ML")
 
@@ -619,7 +619,7 @@ yarra_colors <- c("black", "#74c476", "#6baed6", "#9e9ac8")
 ggplot(data = yarra_fits) +
   geom_point(aes(x = spei, y = anpp, color = trt_type), alpha = 0.2) +
   geom_smooth(aes(x = spei, y = anpp_model_fits, color = trt_type, fill = trt_type), method = "lm", formula = y ~ x + I(x^2) + I(x^3), se = F) +
-  #facet_wrap( ~ n) +
+  facet_wrap(~trt_type) +
   theme_bw() +
   labs(x="SPEI",
        y="ANPP") +
