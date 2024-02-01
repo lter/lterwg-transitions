@@ -84,6 +84,7 @@ ggplot(data = cdr_nutnet_fits) +
   scale_fill_manual(values = cdr_colors) +
   scale_y_continuous(limits = c(0,1000))
 r.squaredGLMM(m.Ca_int)
+final_model_cdr_nutnet <- m.Ca_int
 
 #### cbgb - NutNet ####
 cbgb <- filter(n_sites, site_code == "cbgb.us" & project_name == "NutNet")
@@ -243,6 +244,7 @@ ggplot(data = knz_pplots_fits) +
   labs(x="SPEI",
        y="ANPP") 
 r.squaredGLMM(m.final)
+final_model_knz_pplots <- m.final
 
 ### KUFS - E2 ####
 kufs_e2 <- filter(n_sites, site_code == "KUFS" & project_name == "E2")
@@ -279,7 +281,6 @@ visreg(lm.La, xvar = "spei", type = "conditional", by = "trt_type", data = kufs_
 
 ### KUFS -- E6 ####
 kufs_e6 <- filter(n_sites, site_code == "KUFS" & project_name == "E6")
-
 
 m.null_new <- lme(anpp ~ year*n*p, data = kufs_e6, random = ~1|uniqueID, method="ML")
 
@@ -343,7 +344,7 @@ ggplot(data = kufs_e6_fits) +
   labs(x="SPEI",
        y="ANPP") 
 r.squaredGLMM(m.final)
-
+final_model_kufs_e6 <- m.final
 
 ### niwot -- snow ####
 niwot <- filter(n_sites, site_code == "NWT")
@@ -393,6 +394,7 @@ ggplot(data = niwot_fits) +
   labs(x="SPEI",
        y="ANPP") 
 r.squaredGLMM(m.final)
+final_model_niwot <- m.final
 
 ### SERC - CXN ####
 serc <- filter(n_sites, site_code == "SERC")
@@ -438,6 +440,7 @@ ggplot(data = niwot_fits) +
   labs(x="SPEI",
        y="ANPP") 
 r.squaredGLMM(m.Ca)
+final_model_serc <- m.final
 
 ###sier.us - NutNet ####
 sier <- filter(n_sites, site_code == "sier.us" & project_name == "NutNet")
@@ -508,7 +511,7 @@ m.Ci_p <- lme(anpp ~ spei*n*p + I(spei^2)*n*p + I(spei^3)*p, data = yarra, rando
 AICc(m.null_new, m.La_int, m.La_n, m.La_p, m.Li_int, m.Li_n, m.Li_p, m.Qa_int, m.Qa_n, m.Qa_p, m.Qi_int, m.Qi_n, m.Qi_p, m.Ca_int, m.Ca_n, m.Ca_p, m.Ci_int, m.Ci_n, m.Ci_p)
 min(AICc(m.null_new, m.La_int, m.La_n, m.La_p, m.Li_int, m.Li_n, m.Li_p, m.Qa_int, m.Qa_n, m.Qa_p, m.Qi_int, m.Qi_n, m.Qi_p, m.Ca_int, m.Ca_n, m.Ca_p, m.Ci_int, m.Ci_n, m.Ci_p)
     [,2])
-
+## best is m.Ca_n
 fits <- data.frame("uniqueID" = names(fitted(object = m.Ca_n)),
                    "anpp_model_fits" = fitted(object = m.Ca_n))
 
@@ -530,4 +533,37 @@ ggplot(data = yarra_fits) +
   scale_color_manual(values = yarra_colors) +
   scale_fill_manual(values = yarra_colors)
 r.squaredGLMM(m.Ca_n)
+
+final_model_yarra <- m.Ca_n
+
+
+
+### join models and look at coefficients
+
+## for each site
+
+
+
+all_sites <- n_sites %>%
+  filter(p == 0) %>%
+  unite(newUniqueID, c(uniqueID, site_code, project_name), sep = "-", remove = FALSE)
+
+m.null <- lme(anpp_standardized ~ year*n, data = all_sites, random = ~1|newUniqueID, method="ML")
+m.La <- lme(anpp_standardized ~ spei + n, data = all_sites,random = ~1|newUniqueID, method="ML")
+m.Li <- lme(anpp_standardized ~ spei*n, data = all_sites,random = ~1|newUniqueID, method="ML")
+m.Qa <- lme(anpp_standardized ~ spei+n + I(spei^2), data = all_sites, random = ~1|newUniqueID, method="ML")
+m.Qi <- lme(anpp_standardized ~ spei*n + I(spei^2)*n, data = all_sites,random=~1|newUniqueID,method="ML")
+m.Ca <- lme(anpp_standardized ~ spei+n + I(spei^2) + I(spei^3),data = all_sites,random=~1|newUniqueID, method="ML")
+m.Ci <- lme(anpp_standardized ~ spei*n + I(spei^2)*n + I(spei^3)*n, data = all_sites, random = ~1|newUniqueID, method="ML")
+
+# model selection
+AICc(m.null, m.La, m.Li, m.Qa, m.Qi, m.Ca, m.Ci)
+min(AICc(m.null, m.La, m.Li, m.Qa, m.Qi, m.Ca, m.Ci)[,2])
+mod_list <- list(m.La, m.Qa) ## make a model list
+m.final <- get.models(model.sel(mod_list), subset = 1)[[1]] ## take the full averaged model
+
+
+ggplot(all_sites, aes(x = spei, y = anpp_standardized)) +
+  geom_point() +
+  theme_bw()
 
