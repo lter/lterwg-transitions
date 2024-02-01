@@ -84,12 +84,15 @@ n_sites <- comb_data2 %>%
 ## see "Site Metadata" in the Google Drive folder for more info
 ## sites that harvest in August
 august_gs <- c("KNZ", "KBS", "CDR", "cbgb.us", "KUFS", "NWT")
+z_score <- function(x) (x - mean(x))/sd(x)
 ## Yarra (Australia) is April, Sierra Foothills is May
 n_sites <- n_sites %>%
   mutate(month_keep = ifelse(site_code %in% august_gs, 8, 
                                     ifelse(site_code == 'yarra.us', 4,
                                            ifelse(site_code == "SERC", 10, 5)))) %>%
   filter(month == month_keep) %>%
-  dplyr::select(-month_keep)
-
+  dplyr::select(-month_keep) %>%
+  group_by(site_code, project_name) %>%
+  mutate(anpp_standardized = z_score(anpp)) %>%
+  ungroup()
 ## done -- file needed for site-level analyses is n_sites
