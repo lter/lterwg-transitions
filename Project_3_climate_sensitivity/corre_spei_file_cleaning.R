@@ -23,7 +23,7 @@ all_SPEI_raw<-
 corre_data <- 
   read.csv(here::here("SPEI", "corre_all.csv"))
 
-
+unique(corre_data$site_code)
 ## look at column names
 names(all_SPEI_raw)
 names(corre_data)
