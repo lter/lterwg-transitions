@@ -70,6 +70,7 @@ rownames(fits) <- NULL
 
 # Bind onto "real" data
 cdr_nutnet_fits <- dplyr::left_join(x = cdr_nutnet, y = fits, by = "uniqueID")
+cdr_colors <- c("black", "#74c476", "#6baed6", "#9e9ac8")
 
 # Make desired plot
 ggplot(data = cdr_nutnet_fits) +
@@ -79,8 +80,11 @@ ggplot(data = cdr_nutnet_fits) +
   theme_bw() +
   labs(x="SPEI",
        y="ANPP") +
+  scale_color_manual(values = cdr_colors) +
+  scale_fill_manual(values = cdr_colors) +
   scale_y_continuous(limits = c(0,1000))
 r.squaredGLMM(m.Ca_int)
+final_model_cdr_nutnet <- m.Ca_int
 
 #### cbgb - NutNet ####
 cbgb <- filter(n_sites, site_code == "cbgb.us" & project_name == "NutNet")
@@ -240,6 +244,7 @@ ggplot(data = knz_pplots_fits) +
   labs(x="SPEI",
        y="ANPP") 
 r.squaredGLMM(m.final)
+final_model_knz_pplots <- m.final
 
 ### KUFS - E2 ####
 kufs_e2 <- filter(n_sites, site_code == "KUFS" & project_name == "E2")
@@ -276,7 +281,6 @@ visreg(lm.La, xvar = "spei", type = "conditional", by = "trt_type", data = kufs_
 
 ### KUFS -- E6 ####
 kufs_e6 <- filter(n_sites, site_code == "KUFS" & project_name == "E6")
-
 
 m.null_new <- lme(anpp ~ year*n*p, data = kufs_e6, random = ~1|uniqueID, method="ML")
 
@@ -340,19 +344,7 @@ ggplot(data = kufs_e6_fits) +
   labs(x="SPEI",
        y="ANPP") 
 r.squaredGLMM(m.final)
-
-<<<<<<< HEAD
-=======
-ggplot(kufs_e6, aes(x = spei, y = anpp, color = as.factor(p))) +
-  geom_point() +
-  facet_wrap(~n) +
-  geom_smooth(method = "lm", formula = y ~ x + I(x^2), span = 1, se = F) +
-  labs(y = "ANPP")
-min(kufs_e6$spei)
-max(kufs_e6$spei)
-<<<<<<< HEAD
-=======
->>>>>>> 90542ff1d1a05d53734ec13c88077450733a4394
+final_model_kufs_e6 <- m.final
 
 ### niwot -- snow ####
 niwot <- filter(n_sites, site_code == "NWT")
@@ -402,6 +394,7 @@ ggplot(data = niwot_fits) +
   labs(x="SPEI",
        y="ANPP") 
 r.squaredGLMM(m.final)
+final_model_niwot <- m.final
 
 ### SERC - CXN ####
 serc <- filter(n_sites, site_code == "SERC")
@@ -418,8 +411,36 @@ m.Ci <- lme(anpp ~ spei*n + I(spei^2)*n + I(spei^3)*n, data = serc, random = ~1|
 # model selection
 AICc(m.null, m.La, m.Li, m.Qa, m.Qi, m.Ca, m.Ci)
 min(AICc(m.null, m.La, m.Li, m.Qa, m.Qi, m.Ca, m.Ci)[,2])
-#Best model is m.null
+#Best model is m.Ca
+fits <- data.frame("uniqueID" = names(fitted(object = m.Ca)),
+                   "anpp_model_fits" = fitted(object = m.Ca))
 
+# Drop rownames (purely for aesthetic reasons)
+rownames(fits) <- NULL
+
+# Bind onto "real" data
+serc_fits <- dplyr::left_join(x = serc, y = fits, by = "uniqueID")
+## make column for treatments for plotting
+
+serc_colors <- c("black", "#74c476")
+
+ggplot(data = serc_fits) +
+  geom_point(aes(x = spei, y = anpp, color = trt_type), alpha = 0.4, size = 2) +
+  geom_smooth(aes(x = spei, y = anpp_model_fits, color = trt_type, fill = trt_type), method = "lm", formula = y ~ x + I(x^2), se = F, linewidth = 2) +
+  theme_bw() +
+  scale_color_manual(values = serc_colors) +
+  scale_fill_manual(values = serc_colors) +
+  labs(x="SPEI",
+       y="ANPP") 
+ggplot(data = niwot_fits) +
+  geom_point(aes(x = spei, y = anpp, color = trt_type), alpha = 0.4, size = 2) +
+  geom_smooth(aes(x = spei, y = anpp_model_fits, color = trt_type), method = "lm", formula = y ~ x + I(x^2), se = F, linewidth = 2) +
+  theme_bw() +
+  scale_color_manual(values = niwot_colors) +
+  labs(x="SPEI",
+       y="ANPP") 
+r.squaredGLMM(m.Ca)
+final_model_serc <- m.final
 
 ###sier.us - NutNet ####
 sier <- filter(n_sites, site_code == "sier.us" & project_name == "NutNet")
@@ -490,10 +511,7 @@ m.Ci_p <- lme(anpp ~ spei*n*p + I(spei^2)*n*p + I(spei^3)*p, data = yarra, rando
 AICc(m.null_new, m.La_int, m.La_n, m.La_p, m.Li_int, m.Li_n, m.Li_p, m.Qa_int, m.Qa_n, m.Qa_p, m.Qi_int, m.Qi_n, m.Qi_p, m.Ca_int, m.Ca_n, m.Ca_p, m.Ci_int, m.Ci_n, m.Ci_p)
 min(AICc(m.null_new, m.La_int, m.La_n, m.La_p, m.Li_int, m.Li_n, m.Li_p, m.Qa_int, m.Qa_n, m.Qa_p, m.Qi_int, m.Qi_n, m.Qi_p, m.Ca_int, m.Ca_n, m.Ca_p, m.Ci_int, m.Ci_n, m.Ci_p)
     [,2])
-<<<<<<< HEAD
-# m.Ca_n
-## none within 2
-
+## best is m.Ca_n
 fits <- data.frame("uniqueID" = names(fitted(object = m.Ca_n)),
                    "anpp_model_fits" = fitted(object = m.Ca_n))
 
@@ -502,6 +520,7 @@ rownames(fits) <- NULL
 
 # Bind onto "real" data
 yarra_fits <- dplyr::left_join(x = yarra, y = fits, by = "uniqueID")
+yarra_colors <- c("black", "#74c476", "#6baed6", "#9e9ac8")
 
 # Make desired plot
 ggplot(data = yarra_fits) +
@@ -510,9 +529,41 @@ ggplot(data = yarra_fits) +
   #facet_wrap( ~ n) +
   theme_bw() +
   labs(x="SPEI",
-       y="ANPP") 
+       y="ANPP") +
+  scale_color_manual(values = yarra_colors) +
+  scale_fill_manual(values = yarra_colors)
 r.squaredGLMM(m.Ca_n)
 
-=======
->>>>>>> c30c6b0e6b00b6d6522218b0f626d3368c091d43
->>>>>>> 90542ff1d1a05d53734ec13c88077450733a4394
+final_model_yarra <- m.Ca_n
+
+
+
+### join models and look at coefficients
+
+## for each site
+
+
+
+all_sites <- n_sites %>%
+  filter(p == 0) %>%
+  unite(newUniqueID, c(uniqueID, site_code, project_name), sep = "-", remove = FALSE)
+
+m.null <- lme(anpp_standardized ~ year*n, data = all_sites, random = ~1|newUniqueID, method="ML")
+m.La <- lme(anpp_standardized ~ spei + n, data = all_sites,random = ~1|newUniqueID, method="ML")
+m.Li <- lme(anpp_standardized ~ spei*n, data = all_sites,random = ~1|newUniqueID, method="ML")
+m.Qa <- lme(anpp_standardized ~ spei+n + I(spei^2), data = all_sites, random = ~1|newUniqueID, method="ML")
+m.Qi <- lme(anpp_standardized ~ spei*n + I(spei^2)*n, data = all_sites,random=~1|newUniqueID,method="ML")
+m.Ca <- lme(anpp_standardized ~ spei+n + I(spei^2) + I(spei^3),data = all_sites,random=~1|newUniqueID, method="ML")
+m.Ci <- lme(anpp_standardized ~ spei*n + I(spei^2)*n + I(spei^3)*n, data = all_sites, random = ~1|newUniqueID, method="ML")
+
+# model selection
+AICc(m.null, m.La, m.Li, m.Qa, m.Qi, m.Ca, m.Ci)
+min(AICc(m.null, m.La, m.Li, m.Qa, m.Qi, m.Ca, m.Ci)[,2])
+mod_list <- list(m.La, m.Qa) ## make a model list
+m.final <- get.models(model.sel(mod_list), subset = 1)[[1]] ## take the full averaged model
+
+
+ggplot(all_sites, aes(x = spei, y = anpp_standardized)) +
+  geom_point() +
+  theme_bw()
+
