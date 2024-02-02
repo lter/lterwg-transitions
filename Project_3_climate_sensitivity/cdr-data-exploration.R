@@ -1,6 +1,6 @@
 setwd("~/Desktop/lter transitions/Transitions_CSF/raw_data_GDrive")
 cdr_climate <- read.csv("cdr_weather.csv")
-
+library(tidyverse)
 cdr_climate$newdate <- strptime(as.character(cdr_climate$Date), "%m/%d/%y")
 cdr_climate$nd <- format(cdr_climate$newdate, "%Y-%m-%d")
 tmp <- as.POSIXlt(cdr_climate$nd, format = "%Y-%m-%d")
@@ -21,7 +21,6 @@ names(cdr_climate_final)
 
 cdrclim <- cdr_climate_final[,c(1,4,7,10)]
 cdrtemp <- cdr_climate_final[,c(1,2,9,10)]
-library(tidyverse)
 #### precip data ####
 cdrclim$growing_season <- ifelse(cdrclim$julian_day >= 91 & cdrclim$julian_day <= 212, "growingseason", "notgrowingseason")
 cdrclim1 <- cdrclim %>%
@@ -34,6 +33,7 @@ cdrclim1$year <- as.numeric(cdrclim1$year)
 density_plot <- ggplot(cdrclim1, aes(MAP_mm)) +
   geom_density() +
   theme_bw()
+cdr_clean <- read.csv("cdr_clean.csv")
 cdr_clean_no_na <- na.omit(cdr_clean)
 cdr_clean_no_na$year <- as.numeric(cdr_clean_no_na$year)
 cdr_anpp_full <- cdr_clean_no_na %>%
@@ -502,7 +502,7 @@ cdr_full1 <- cdr_full %>%
   summarize(MAP_mm = sum(25.4*Precip.inches.),
             max_temp_c = mean((MaxTemp.degF. - 32)*(5/9)))
 library(SPEI)
-
+range(cdr_full$year)
 #Calculate balances
 
 cdr_full1$PET <- thornthwaite(cdr_full1$max_temp_c, 45.4017)
